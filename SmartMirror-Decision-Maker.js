@@ -8,7 +8,7 @@
  */
 
 
-Module.register("SmartMirror-Decision-Maker", {
+ Module.register("SmartMirror-Decision-Maker", {
 
 
 	mainManuStateObj: {
@@ -57,7 +57,7 @@ Module.register("SmartMirror-Decision-Maker", {
 	MainMenuItemsAmount: 0,
 	MainMenuSelected: -1,
 	MainMenuSelectedLast: -1,
-	MainMenuItemSize: 0.07,//0.0375,
+	MainMenuItemSize: 0.03, //0.0375, // 0.07
 	MainMenuSelectedTime: 0,
 
 	newsNextLastTime: {timestamp: undefined},
@@ -97,7 +97,9 @@ Module.register("SmartMirror-Decision-Maker", {
 		"MMM-DailyDilbert",
 		"MMM-Fuel",
 		"MMM-ITCH-IO",
-		"weatherforecast"
+		"weatherforecast",
+		"weather",
+		"SmartMirror-Main-Menu-Tiles"
 	],
 
 
@@ -108,34 +110,37 @@ Module.register("SmartMirror-Decision-Maker", {
 	
 		ai_art_mirror: true,
 
-		maxDetFPS: 30.0,
+		maxDetFPSforground: 30.0,
+		maxDetFPSbackground: 16.0,
 	
 		module_list: [
-			{name : "clock", words : ["clock","uhr"]},
-			{name : "calendar", words : ["calendar"]},
-			{name : "smartmirror-speechrecognition", words : ["speech"]},
-			{name : "MMM-cryptocurrency", words : ["crypto"]},
-			{name : "weatherforecast", words : ["wforecast"]},
-			{name : "currentweather", words : ["weather","wetter"]},
-			{name : "newsfeed", words : ["news feed" , "newsfeed"]},
-			{name : "MMM-SimpleLogo", words : ["legato-logo"]},
-			{name : "MMM-PublicTransportHafas", words : ["transportation"]},
-			{name : "MMM-TomTomTraffic", words : ["traffic"]},
-			{name : "smartmirror-mensa-plan", words : ["mensa"]},
-			{name : "smartmirror-main-menu", words : ["menu"]},
-			{name : "SmartMirror-Main-Menu-Center", words : ["menu-center"]},
-			{name : "smartmirror-center-display", words : ["centerdisplay"]},
-			{name : "smartmirror-bivital", words: ["bivital"]},
-			{name : "MMM-SoccerLiveScore", words: ["soccer"]},
-			{name : "MMM-News", words : ["news"]},
-			{name : "MMM-Canteen", words : ["canteen"]},
-			{name : "MMM-Fuel", words : ["fuel", "gas"]},
-			{name : "MMM-DailyDilbert", words : ["comic"]},
-			{name : "MMM-Liquipedia-Dota2", words : ["esports", "dota2"]},
-			{name : "MMM-ITCH-IO", words : ["games"]},
-			{name : "smartmirror-coffeebot", words : ["coffee","coffeebot"]},
-			{name : "SmartMirror-Decision-Maker", words : ["Decision_maker"]},
-			{name : "SmartMirror-Image-Handler", words :["image_handler"]}
+			{ name: "clock", words: ["clock", "uhr"] },
+			{ name: "calendar", words: ["calendar"] },
+			{ name: "smartmirror-speechrecognition", words: ["speech"] },
+			{ name: "MMM-cryptocurrency", words: ["crypto"] },
+			{ name: "weatherforecast", words: ["wforecast"] },
+			{ name: "currentweather", words: ["weather", "wetter"] },
+			{ name: "newsfeed", words: ["news feed", "newsfeed"] },
+			{ name: "MMM-SimpleLogo", words: ["legato-logo"] },
+			{ name: "MMM-PublicTransportHafas", words: ["transportation"] },
+			{ name: "MMM-TomTomTraffic", words: ["traffic"] },
+			{ name: "smartmirror-mensa-plan", words: ["mensa"] },
+			{ name: "smartmirror-main-menu", words: ["menu"] },
+			{ name: "SmartMirror-Main-Menu-Center", words: ["menu-center"] },
+			{ name: "smartmirror-center-display", words: ["centerdisplay"] },
+			{ name: "smartmirror-bivital", words: ["bivital"] },
+			{ name: "MMM-SoccerLiveScore", words: ["soccer"] },
+			{ name: "MMM-News", words: ["news"] },
+			{ name: "MMM-Canteen", words: ["canteen"] },
+			{ name: "MMM-Fuel", words: ["fuel", "gas"] },
+			{ name: "MMM-DailyDilbert", words: ["comic"] },
+			{ name: "MMM-Liquipedia-Dota2", words: ["esports", "dota2"] },
+			{ name: "MMM-ITCH-IO", words: ["games"] },
+			{ name: "smartmirror-coffeebot", words: ["coffee", "coffeebot"] },
+			{ name: "SmartMirror-Decision-Maker", words: ["Decision_maker"] },
+			{ name: "SmartMirror-Image-Handler", words: ["image_handler"] },
+			{ name: "SmartMirror-Webserver-ImageView", words: ["image_handler"] },
+			{ name: "SmartMirror-Label-Display", words: ["image_handler"] },
 		],
 		speechrec_hotword: ["jarvis","smartmirror"]
 	},
@@ -144,15 +149,32 @@ Module.register("SmartMirror-Decision-Maker", {
 // START FUNKTION
 //----------------------------------------------------------------------//
 	start: function() {
-		this.currentuserid = -1;
-		console.log(this.name + " has started...");
-		this.sendNotification('MAIN_MENU', 'menu');
-		this.mainManuState = this.mainManuStateObj.main;
-		console.log("[" + this.name + "] " + "sending MAIN_MENU: none");
-		this.sendSocketNotification('CONFIG', this.config);
-		this.Debug_infos['max detection FPS'] = this.config.maxDetFPS;
+		var self = this;
+		self.currentuserid = -1;
+		console.log(self.name + " has started...");
+		self.sendNotification('MAIN_MENU', 'menu');
+		self.mainManuState = self.mainManuStateObj.main;
+		console.log("[" + self.name + "] " + "sending MAIN_MENU: none");
+		self.sendSocketNotification('CONFIG', self.config);
+
+		self.Debug_infos['user logged in'] = "nobody";
+		self.Debug_infos['camera FPS'] = -1;
+		self.Debug_infos['remove bg FPS'] = -1;
+		self.Debug_infos['websocket FPS'] = -1;
+		self.Debug_infos['face recognition FPS'] = -1;
+		self.Debug_infos['object recognition FPS'] = -1;
+		self.Debug_infos['gesture recognition FPS'] = -1;
+		self.Debug_infos['avg recognition FPS'] = -1;
+		//self.Debug_infos['total power consumption'] = -1;
+
+		//self.Debug_infos['max detection FPS'] = self.config.maxDetFPS;
 		//config.language = "de";
 		//Translator.loadCoreTranslations(config.language);
+
+		/* Tell all module the max FPS numbers like a heartbeat */
+		var intervalId = setInterval(function() {
+  			self.adjust_detection_fps();
+		}, 1000);	
 
 	},
 
@@ -168,98 +190,104 @@ Module.register("SmartMirror-Decision-Maker", {
 		switch (notification) {
 			case 'CENTER_DISPLAY_FPS':
 				self.Debug_infos['center display FPS'] = payload;
-				self.updateDom();
-				return;
-			case 'CAMERA_FPS':
-				self.Debug_infos['camera FPS'] = payload;
-				self.updateDom();
-				return;
-			case 'IMAGE_HANDLER_FPS':
-				self.Debug_infos['image handler FPS'] = payload;
-				self.updateDom();
-				return;
-			case 'FACE_DET_FPS':
-				self.Debug_infos['face recognition FPS'] = payload;
-				self.updateDom();
-				return;
-			case 'OBJECT_DET_FPS':
-				self.Debug_infos['object recognition FPS'] = payload;
-				self.updateDom();
-				return;
-			case 'GESTURE_DET_FPS':
-				self.Debug_infos['gesture recognition FPS'] = payload;
-				self.updateDom();
-				return;
-			case 'AI_ART_FPS':
-				self.Debug_infos['ai art FPS'] = payload;
-				self.updateDom();
-				return;
+				break;
+			case '/camera_left/fps':
+				var json_obj = JSON.parse(payload);
+				self.Debug_infos['camera FPS'] = json_obj["FPS"];
+				break;
+			case '/background/fps':
+				var json_obj = JSON.parse(payload);
+				self.Debug_infos['remove bg FPS'] = json_obj["FPS"];
+				break;
+			case '/websocket/fps':
+				var json_obj = JSON.parse(payload);
+				self.Debug_infos['websocket FPS'] = json_obj["FPS"];
+				break;
+			case '/face_det/fps':
+				var json_obj = JSON.parse(payload);
+				self.Debug_infos['face recognition FPS'] = json_obj["FPS"];
+				break;
+			case '/object_det/fps':
+				var json_obj = JSON.parse(payload);
+				self.Debug_infos['object recognition FPS'] = json_obj["OBJECT_DET_FPS"];
+				break;
+			case '/gesture_det/fps':
+				var json_obj = JSON.parse(payload);
+				self.Debug_infos['gesture recognition FPS'] = json_obj["GESTURE_DET_FPS"];
+				break;
 			case 'BIVITAL_CONNECTED':
-				self.Debug_infos['BiVital Connected'] = true;
-				self.updateDom();
-				return;
+				//self.Debug_infos['BiVital Connected'] = true;
+				break;
 			case 'BIVITAL_DISCONNECTED':
-				self.Debug_infos['BiVital Connected'] = false;
-				self.updateDom();
-				return;
+				//self.Debug_infos['BiVital Connected'] = false;
+				break;
 			case 'TEGRASTATS' :
 				var total_power = 0;
 				Object.entries(payload).forEach(([key, value]) => {
-					self.Debug_infos[key + " power consumption"] = value.WATT.TOTAL.cur.toFixed(2) + " W";
+					//self.Debug_infos[key + " power consumption"] = value.WATT.TOTAL.cur.toFixed(2) + " W";
 					total_power += value.WATT.TOTAL.cur;
 				});
+				
+
 				self.Debug_infos["total power consumption"] = total_power.toFixed(2) + " W";
-				self.updateDom();
-				return;
+				break;
 		}
+
+			
+		self.Debug_infos['avg recognition FPS'] = 	((self.Debug_infos['face recognition FPS'] + 
+													self.Debug_infos['object recognition FPS'] + 
+													self.Debug_infos['gesture recognition FPS']) / 3).toFixed(2);
+		self.updateDom();
+			
 
 		//no controle if a selfie is made!
 		//just return and ignor all changes
-		if (self.selfieOngoing == true){
-			return;
-		}
-		
-		// all control messages
-		switch (notification) {
-			case 'TRANSCRIPT_EN':
-				console.log("[" + self.name + "] " + "transcript received: " + payload);
-				self.process_string(payload);
-				return;
-			case 'TRANSCRIPT_DE':
-				console.log("[" + self.name + "] " + "transcript received: " + payload);
-				self.process_string(payload)
-				return;
-			case 'MENU_ITEMS':
-				console.log("[" + self.name + "] " + "Menu item has the following items: " + payload);
-				self.MainMenuItems = payload;
-				self.MainMenuItemsAmount = payload.length;
-				return;
-			case 'MENU_CLICKED':
-				console.log("[" + self.name + "] " + "Menu item was clicked: " + payload);
-				self.process_string(payload)
-				return;
-			case 'RECOGNIZED_PERSONS':
-				self.process_rec_person(payload.RECOGNIZED_PERSONS);
-				return;
-			case 'ALL_MODULES_STARTED':
-				self.sendSocketNotification('LOGGIN_USER', -1);
-				self.sendNotification('smartmirror-TTS-en',"Welcome to the smart mirror!");
-				//setTimeout(() => {this.start_idle_ai_mirror_art();}, 10000);
-				setTimeout(() => {self.logDataPoints();}, 10000);
-				return;
-			case 'DOM_OBJECTS_CREATED':
-				MM.getModules().enumerate(function(module) {
-				if (module.name != "MMM-TomTomTraffic") {
-					module.hide(0, function() {
-						Log.log('Module is hidden.');
-					}, {lockString: "lockString"});
-					setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
-				} else {
-					setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: "MMM-TomTomTraffic", visibility: true});}, 500)
-				}
-				});
-				return;
+		if (self.selfieOngoing == false){
+
+			// all control messages
+			switch (notification) {
+				case 'TRANSCRIPT_EN':
+					console.log("[" + self.name + "] " + "transcript received: " + payload);
+					self.process_string(payload);
+					break;
+				case 'TRANSCRIPT_DE':
+					console.log("[" + self.name + "] " + "transcript received: " + payload);
+					self.process_string(payload)
+					break;
+				case 'MENU_ITEMS':
+					console.log("[" + self.name + "] " + "Menu item has the following items: " + payload);
+					self.MainMenuItems = payload;
+					self.MainMenuItemsAmount = payload.length;
+					break;
+				case 'MENU_CLICKED':
+					console.log("[" + self.name + "] " + "Menu item was clicked: " + payload);
+					self.process_string(payload)
+					break;
+				case 'RECOGNIZED_PERSONS':
+					self.process_rec_person(payload.RECOGNIZED_PERSONS);
+					break;
+				case 'ALL_MODULES_STARTED':
+					self.sendSocketNotification('LOGGIN_USER', -1);
+					self.sendNotification('smartmirror-TTS-en',"Welcome to the smart mirror!");
+					//setTimeout(() => {self.start_idle_ai_mirror_art();}, 10000);
+					setTimeout(() => {self.logDataPoints();}, 10000);
+					break;
+				case 'DOM_OBJECTS_CREATED':
+					MM.getModules().enumerate(function(module) {
+						if (module.name != "MMM-TomTomTraffic") {
+							module.hide(0, function() {
+							Log.log('Module is hidden.');
+						}, {lockString: "lockString"});
+						setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
+						} else {
+						setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: "MMM-TomTomTraffic", visibility: true});}, 500)
+					}
+					});
+				break;
+			}
 		}		
+		return;
+
 	},
 
 //----------------------------------------------------------------------//
@@ -278,10 +306,10 @@ Module.register("SmartMirror-Decision-Maker", {
 	socketNotificationReceived: function(notification, payload) {
 		var self = this;
 		if(notification === 'LOGGIN_USER_INFOS') {
-			//console.log("[" + this.name + "] " + "User data received: " + JSON.stringify(JSON.parse(payload)[0]["language"]));	
+			//console.log("[" + self.name + "] " + "User data received: " + JSON.stringify(JSON.parse(payload)[0]["language"]));	
 			//console.log("test " + JSON.parse(payload)[0])
 			
-			this.adjustViewLogin((JSON.parse(payload))[0]);
+			self.adjustViewLogin((JSON.parse(payload))[0]);
 
 			
 			self.Debug_infos['user logged in'] = JSON.parse(payload)[0]["name"];
@@ -289,31 +317,30 @@ Module.register("SmartMirror-Decision-Maker", {
 	
 			if (JSON.parse(payload)[0]["ID"] > 0) {
 				
-				//this.sendNotification('smartmirror-TTS-en',"Hello, nice to see you");
+				//self.sendNotification('smartmirror-TTS-en',"Hello, nice to see you");
 				var d = new Date();
-				if((d.getTime() - this.timeOFLastGreet > this.timebetweenGreets)){
-					this.sendSocketNotification("GREET_USER",[JSON.parse(payload)[0]["language"],JSON.parse(payload)[0]["name"]])
-					this.timeOFLastGreet = d.getTime();   
+				if((d.getTime() - self.timeOFLastGreet > self.timebetweenGreets)){
+					self.sendSocketNotification("GREET_USER",[JSON.parse(payload)[0]["language"],JSON.parse(payload)[0]["name"]])
+					self.timeOFLastGreet = d.getTime();   
 				}
 			}else if (JSON.parse(payload)[0]["ID"] == -1) {
 				//if nodody is in front of the mirror close everything
 				//menu closed..
-				this.sendNotification('MAIN_MENU', 'menu');
-				this.mainManuState = this.mainManuStateObj.main;
+				self.sendNotification('MAIN_MENU', 'menu');
+				self.mainManuState = self.mainManuStateObj.main;
 				//center display closed..
 				self.remove_everything_center_display();
 				if(self.config.ai_art_mirror == true){
-					setTimeout(() => {this.start_idle_ai_mirror_art();}, 10000);
+					setTimeout(() => {self.start_idle_ai_mirror_art();}, 20000);
 				}	
 			}
-			this.adjust_detection_fps();
 		}else if(notification === 'GREET_USER_RESULT'){
 			if (payload[0] == "de")
-				this.sendNotification('smartmirror-TTS-ger',payload[1]);
+				self.sendNotification('smartmirror-TTS-ger',payload[1]);
 			else if (payload[0] == "en")
-				this.sendNotification('smartmirror-TTS-en',payload[1]);
+				self.sendNotification('smartmirror-TTS-en',payload[1]);
 
-			this.sendNotification("SHOW_ALERT", {type: "notification", message: payload[1]});
+			self.sendNotification("SHOW_ALERT", {type: "notification", message: payload[1]});
 
 
 		}
@@ -328,10 +355,9 @@ Module.register("SmartMirror-Decision-Maker", {
 		if((self.aiartmirrorshown == true)){
 			self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
 			self.aiartmirrorshown = false;
-			self.adjust_detection_fps();
 		}
 
-		this.sendNotification('USER_MODULE_VISIBILITY_CONFIG', user_config)
+		self.sendNotification('USER_MODULE_VISIBILITY_CONFIG', user_config)
 
 		self.config.module_list.forEach(function(element) {
 			for(var key in user_config){
@@ -363,14 +389,12 @@ Module.register("SmartMirror-Decision-Maker", {
 		var self = this;
 		// example:  {"1": {"TrackID": 522, "face": {"confidence": 0.9970833725349748, "w_h": [0.1037, 0.09167], "TrackID": 282, "center": [0.52222, 0.59375], "id": 4, "name": "Nils"}, "w_h": [0.375, 0.40625], "name": "person", "center": [0.4963, 0.72083]}}
 
-		//console.log("[" + this.name + "] process_rec_person triggered " +  JSON.stringify(persons));
+		//console.log("[" + self.name + "] process_rec_person triggered " +  JSON.stringify(persons));
 
 
 		if (self.numberOfRecognisedPersons != Object.keys(persons).length){
-			if( self.numberOfRecognisedPersons == 0)
-				self.adjust_detection_fps();
+
 			self.numberOfRecognisedPersons = Object.keys(persons).length
-			//setTimeout(() => {this.check_for_user_idle();}, 3000);
 			
 			if(self.numberOfRecognisedPersons == 0){
 				if(self.currentuserid != -1){
@@ -380,39 +404,55 @@ Module.register("SmartMirror-Decision-Maker", {
 			
 		}
 
-		var login_id = -1;
+		var idToLoginNow = -1;
 		if (Object.keys(persons).length != 0){
-			//console.log("test "+ this.currentpersonTrackID + "        " + JSON.stringify(persons))
+			//console.log("test "+ self.currentpersonTrackID + "        " + JSON.stringify(persons))
 			if (persons.hasOwnProperty(self.currentpersonTrackID)){
-				//console.log(persons[this.currentpersonTrackID])
+				//console.log(persons[self.currentpersonTrackID])
 				if (persons[self.currentpersonTrackID].hasOwnProperty('face'))
-					login_id = persons[self.currentpersonTrackID].face.id
+					if(persons[self.currentpersonTrackID].face.confidence > 0.3){
+						idToLoginNow = persons[self.currentpersonTrackID].face.id
+					} else {
+						idToLoginNow = 0;
+					}
 				if (persons[self.currentpersonTrackID].hasOwnProperty('gestures')) {
 					self.process_gestures_object(persons[self.currentpersonTrackID].gestures);
-					//console.log("[" + this.name + "] ceck gestures");
+					//console.log("[" + self.name + "] ceck gestures");
 				} else {
 					self.process_gestures_object([]);
 				}
 			}
 
-			if (login_id < 1) {
+			if (idToLoginNow < 1) {
 				for(var key in persons)
 					if (persons[key].hasOwnProperty('face')){
-						login_id = persons[key].face.id;
+						if(persons[key].face.confidence > 0.3){
+							idToLoginNow = persons[key].face.id;
+						}else{
+							idToLoginNow = 0;
+						}			
 						self.currentpersonTrackID = key; //persons["TrackID"];
-						if (login_id > 0) {
+						//self.Debug_infos['currentpersonTrackID'] = self.currentpersonTrackID;
+						//self.updateDom();
+						if (idToLoginNow > 0) {
 							break;
 						}
 					}
 			}
 		} 
 
+		if (idToLoginNow == -1){
+			self.currentpersonTrackID = -1; //persons["TrackID"];
+			//self.Debug_infos['currentpersonTrackID'] = -1;
+			//self.updateDom();
+		}
 
-		if (login_id != self.currentuserid){
-			self.sendSocketNotification('LOGGIN_USER', login_id);
-			self.currentuserid = login_id;
-			console.log("[" + self.name + "] changing current user to: " + login_id );
-			self.sendNotification('USER_LOGIN', login_id);
+
+		if (idToLoginNow != self.currentuserid){
+			self.sendSocketNotification('LOGGIN_USER', idToLoginNow);
+			self.currentuserid = idToLoginNow;
+			console.log("[" + self.name + "] changing current user to: " + idToLoginNow );
+			self.sendNotification('USER_LOGIN', idToLoginNow);
 			if(self.readingMode){
 				self.readingMode = false
 				self.leaveReadingMode()
@@ -426,35 +466,45 @@ Module.register("SmartMirror-Decision-Maker", {
 // can be turned down if not shown
 //----------------------------------------------------------------------//
 	adjust_detection_fps: function(){
-		if (this.objectdetectionshown) {
-			this.sendNotification("smartmirror-object-detection" + "SetFPS", this.config.maxDetFPS);
+		var self = this;
+		if (self.objectdetectionshown) {
+			self.sendNotification("smartmirror-object-detection" + "SetFPS", self.config.maxDetFPSforground);
 		} else {
-			this.sendNotification("smartmirror-object-detection" + "SetFPS", 16.0)
-		}
-		if (this.gesturerecognitionshown) {
-			this.sendNotification("smartmirror-gesture-recognition" + "SetFPS", this.config.maxDetFPS);
-		} else {
-			if (this.currentuserid == -1)
-				this.sendNotification("smartmirror-gesture-recognition" + "SetFPS", 0.0);
-			else
-				this.sendNotification("smartmirror-gesture-recognition" + "SetFPS", 16.0);
-		}
-		if (this.facerecognitionshown) {
-			this.sendNotification("smartmirror-facerecognition" + "SetFPS", this.config.maxDetFPS);
-		} else {
-			if (this.numberOfRecognisedPersons == 0)
-				this.sendNotification("smartmirror-facerecognition" + "SetFPS", 0.0);
-			else
-				this.sendNotification("smartmirror-facerecognition" + "SetFPS", 16.0);
-		}
-		if (this.aiartmirrorshown) {
-			if (this.numberOfRecognisedPersons == 0) {
-				this.sendNotification("smartmirror-ai-art-mirror_SetFPS", 10.0);
+			if (self.aiartmirrorshown) {
+				self.sendNotification("smartmirror-object-detection" + "SetFPS",10.0)
 			} else {
-				this.sendNotification("smartmirror-ai-art-mirror_SetFPS", 30.0);
+				self.sendNotification("smartmirror-object-detection" + "SetFPS", self.config.maxDetFPSbackground)
+			}
+		}
+		if (self.gesturerecognitionshown) {
+			self.sendNotification("smartmirror-gesture-recognition" + "SetFPS", self.config.maxDetFPSforground);
+		} else {
+			if (self.currentuserid == -1)
+				self.sendNotification("smartmirror-gesture-recognition" + "SetFPS", 0.0);
+			else
+				self.sendNotification("smartmirror-gesture-recognition" + "SetFPS", self.config.maxDetFPSbackground);
+		}
+		if (self.facerecognitionshown) {
+			self.sendNotification("smartmirror-facerecognition" + "SetFPS", self.config.maxDetFPSforground);
+		} else {
+			if (self.numberOfRecognisedPersons == 0){
+				self.sendNotification("smartmirror-facerecognition" + "SetFPS", 0.0);
+			} else { 
+				if (self.aiartmirrorshown) {
+					self.sendNotification("smartmirror-facerecognition" + "SetFPS", 5.0);
+				} else {
+					self.sendNotification("smartmirror-facerecognition" + "SetFPS", self.config.maxDetFPSbackground);
+				}
+			}
+		}
+		if (self.aiartmirrorshown) {
+			if (self.numberOfRecognisedPersons == 0) {
+				self.sendNotification("smartmirror-ai-art-mirror_SetFPS", self.config.maxDetFPSbackground);
+			} else {
+				self.sendNotification("smartmirror-ai-art-mirror_SetFPS", self.config.maxDetFPSforground);
 			}
 		} else {
-			this.sendNotification("smartmirror-ai-art-mirror_SetFPS", 0.0);
+			self.sendNotification("smartmirror-ai-art-mirror_SetFPS", 0.0);
 		}
 
 	},
@@ -464,8 +514,9 @@ Module.register("SmartMirror-Decision-Maker", {
 // can be received by menu or speech recognition
 //----------------------------------------------------------------------//
 	process_string: function(transcript){
+		var self = this
 		if (typeof transcript === 'string'){
-			var self = this
+			
 
 			if(transcript.includes('shutdown') || transcript.includes('sudo') || transcript.includes('reboot')){
 				self.sendNotification('smartmirror-TTS-en', "Thorsten no! Stop it!");
@@ -488,7 +539,7 @@ Module.register("SmartMirror-Decision-Maker", {
 					}else if(transcript.includes('application')||transcript.includes('anwendung')){				
 						self.sendNotification('MAIN_MENU', 'application');
 						self.mainManuState = self.mainManuStateObj.application;
-					}else if(transcript.includes('utilities')||transcript.includes('nützliches')){				
+					}else if(transcript.includes('utilities')||transcript.includes('nÃ¼tzliches')){				
 						self.sendNotification('MAIN_MENU', 'utilities');
 						self.mainManuState = self.mainManuStateObj.utilities;
 					}else if(transcript.includes('campus')||transcript.includes('kampus')){				
@@ -506,7 +557,7 @@ Module.register("SmartMirror-Decision-Maker", {
 					}
 					return;
 				case self.mainManuStateObj.camera: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					}else if(transcript.includes('image')||transcript.includes('bild')){				
@@ -525,17 +576,14 @@ Module.register("SmartMirror-Decision-Maker", {
 					}else if(transcript.includes('object')){				
 						self.sendNotification('CENTER_DISPLAY', 'OBJECT');
 						self.objectdetectionshown = !(self.objectdetectionshown);
-						self.adjust_detection_fps();
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
 					}else if(transcript.includes('gesture')||transcript.includes('hand')){				
 						self.sendNotification('CENTER_DISPLAY', 'GESTURE');
 						self.gesturerecognitionshown = !(self.gesturerecognitionshown);
-						self.adjust_detection_fps();
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
 					}else if(transcript.includes('face')||transcript.includes('gesicht')){				
 						self.sendNotification('CENTER_DISPLAY', 'FACE');
 						self.facerecognitionshown = !(self.facerecognitionshown); 
-						self.adjust_detection_fps();
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
 					}else if(transcript.includes('person')||transcript.includes('person')){
 						self.sendNotification('CENTER_DISPLAY', 'PERSON');
@@ -550,7 +598,6 @@ Module.register("SmartMirror-Decision-Maker", {
 						self.gesturerecognitionshown = true;
 						self.cameraimageshown = true;
 						self.personrecognitionshown = true;
-						self.adjust_detection_fps();
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
@@ -559,30 +606,28 @@ Module.register("SmartMirror-Decision-Maker", {
 					}
 					return;
 				case self.mainManuStateObj.augmentations: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){		
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){		
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					}else if(transcript.includes('aiartmiror')||transcript.includes('ai')||transcript.includes('mirror')||transcript.includes('art')) {
 						self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
 						self.aiartmirrorshown = ! self.aiartmirrorshown;
-						self.adjust_detection_fps();
 						setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});}, 500)
 					}else if(transcript.includes('randomsytle')) {
 						self.sendNotification('smartmirror-ai-art-mirror','RANDOM_STYLE');
 						self.aiartmirrorshown_random = ! self.aiartmirrorshown_random;
 					}else if(transcript.includes('nextsytle')) {
-						self.sendNotification('smartmirror-ai-art-mirror','NEXT_STYLE');
+						//self.sendNotification('smartmirror-ai-art-mirror','NEXT_STYLE');
 					}else if(transcript.includes('prevsytle')) {
-						self.sendNotification('smartmirror-ai-art-mirror','PREV_STYLE');
+						//self.sendNotification('smartmirror-ai-art-mirror','PREV_STYLE');
 					}else if(transcript.includes('sourcesytle')) {
-						self.sendNotification('smartmirror-ai-art-mirror','DISP_SOURCE');
-	
+						//self.sendNotification('smartmirror-ai-art-mirror','DISP_SOURCE');
 					}
 					return;
 				case self.mainManuStateObj.utilities: // switch (self.mainManuState)
 				case self.mainManuStateObj.campus: // switch (self.mainManuState)
 				case self.mainManuStateObj.entertainment: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					} else {
@@ -607,7 +652,7 @@ Module.register("SmartMirror-Decision-Maker", {
 					}	
 					return;	
 				case self.mainManuStateObj.smarthome: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					} else if(transcript.includes('coffee')){
@@ -616,7 +661,7 @@ Module.register("SmartMirror-Decision-Maker", {
 					}
 					return;
 				case self.mainManuStateObj.coffee: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
 						self.sendNotification('MAIN_MENU', 'smarthome');
 						self.mainManuState = self.mainManuStateObj.smarthome;
 					} else if (transcript.includes('stats')) {
@@ -662,7 +707,7 @@ Module.register("SmartMirror-Decision-Maker", {
 					}
 					return;
 				case self.mainManuStateObj.preferences: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					} else if(transcript.includes('user')){
@@ -671,7 +716,7 @@ Module.register("SmartMirror-Decision-Maker", {
 					}
 					return;
 				case self.mainManuStateObj.user_settings: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
+					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.preferences;
 					}
@@ -704,7 +749,7 @@ Module.register("SmartMirror-Decision-Maker", {
 							self.lastYOfFlatRight = item["center"][1]
 							self.lastXOfFlatRight = item["center"][0]
 
-							var offset = 0.5 - (self.MainMenuItemSize * (self.MainMenuItemsAmount/2)) - 0.02;
+							var offset = 0.4 - (self.MainMenuItemSize * (self.MainMenuItemsAmount/2)) - 0.02;
 	
 							self.MainMenuSelected = -1;
 
@@ -715,11 +760,25 @@ Module.register("SmartMirror-Decision-Maker", {
 			
 								if(a < self.lastYOfFlatRight && self.lastYOfFlatRight < b ){
 									self.MainMenuSelected = i;
-									Log.log("MainMenuSelected ", self.MainMenuSelected) //alles außer -1
+									Log.log("MainMenuSelected ", self.MainMenuSelected) //alles auÃŸer -1
 								}
 							}
 						}
 					});
+
+					MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
+						if (module.hidden && self.check_for_validity(self.mainMenuShowLastTime, 0.2, 1.4)){
+							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
+							self.sendNotification('GESTURE_INTERACTION', 'menu_show') //send this notification when user desires to open the main menu via gesture
+						}else if(!module.hidden){
+							self.lastTimeFlatRight = new Date();
+							self.lastXOfFlatRight = item["center"][0]
+							self.lastYOfFlatRight = item["center"][1]
+							//console.log("[" + self.name + "] center X = " + self.lastXOfFlatRight + "  center Y = " + self.lastYOfFlatRight);
+							self.MainMenuSelected = module.getSelectionIndexForPosition(self.lastXOfFlatRight, self.lastYOfFlatRight);
+						}
+					});
+
 					break;
 				case "thumbs_up_right":
 				
@@ -743,8 +802,6 @@ Module.register("SmartMirror-Decision-Maker", {
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-camera-image', visibility: self.cameraimageshown});}, 500)
 						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Person-Recognition', visibility: true});}, 500)
-						
-						self.adjust_detection_fps();
 					}
 					break;
 				case "thumbs_up_left":
@@ -753,7 +810,6 @@ Module.register("SmartMirror-Decision-Maker", {
 						self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
 						self.sendNotification('GESTURE_INTERACTION', 'STYLE_TRANSFERE'); //send this notification when user desires to turn air art on
 						self.aiartmirrorshown = true;
-						self.adjust_detection_fps();
 						self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});
 					}
 					break;
@@ -823,6 +879,18 @@ Module.register("SmartMirror-Decision-Maker", {
 						self.mainManuState = self.mainManuStateObj.main;
 					}
 				});
+			MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
+				if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 1, 1.5)){
+					module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
+					self.sendNotification('GESTURE_INTERACTION', 'menu_hide') //send this notification when user desires to close the main menu via gesture
+
+					self.MainMenuSelected = -1;
+					self.MainMenuSelectedLast = -1;
+					self.MainMenuSelectedTime = 0;
+					self.sendNotification('MAIN_MENU', 'menu');
+					self.mainManuState = self.mainManuStateObj.main;
+				}
+			});
 			
 		}
 
@@ -868,7 +936,7 @@ Module.register("SmartMirror-Decision-Maker", {
 //----------------------------------------------------------------------//
 	check_for_menu_click:function(select_time, item){
 		var self = this;
-		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && ( select_time == this.MainMenuSelectedTime)){
+		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && ( select_time == self.MainMenuSelectedTime)){
 			console.log("[" + self.name + "] menu click" );
 			self.sendNotification('MAIN_MENU_CLICK_SELECTED');
 			self.MainMenuSelected = -1;
@@ -951,7 +1019,6 @@ Module.register("SmartMirror-Decision-Maker", {
 		self.personrecognitionshown = false;
 		self.aiartmirrorshown = false;
 		self.cameraimageshown = false;
-		self.adjust_detection_fps();
 		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
 		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
 		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
@@ -977,19 +1044,19 @@ Module.register("SmartMirror-Decision-Maker", {
 // START AI ART MIRROR IF IDLE
 //----------------------------------------------------------------------//
 	start_idle_ai_mirror_art: function(){
-	 	if(this.currentuserid == -1) {
-			if (this.aiartmirrorshown == false){
+		var self = this;
+	 	if(self.currentuserid == -1) {
+			if (self.aiartmirrorshown == false){
 				MM.getModules().withClass("smartmirror-center-display").enumerate(function(module) {
 					module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 				});
 				MM.getModules().withClass("SmartMirror-Image-Handler").enumerate(function(module) {
 					module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 				});
-				this.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
-				this.aiartmirrorshown = true;
-				this.adjust_detection_fps();
-				this.sendNotification("SHOW_ALERT", {type: "notification", message: "showing ai art as idle screen!"});
-				setTimeout(()=>{this.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: this.aiartmirrorshown});}, 500)
+				self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
+				self.aiartmirrorshown = true;
+				self.sendNotification("SHOW_ALERT", {type: "notification", message: "showing ai art as idle screen!"});
+				setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});}, 500)
 			}
 		} 
 	},
@@ -999,8 +1066,9 @@ Module.register("SmartMirror-Decision-Maker", {
 // shows debug information in the this.Debug_infos[key] dictionary
 //----------------------------------------------------------------------//
 	getDom() {
+		var self = this;
 
-		this.data.header = 'Debug Informations'
+		self.data.header = 'Debug Informations'
 
 		var myTableDiv = document.createElement("DebugTable");
 		myTableDiv.className = "DebugTablexsmall";
@@ -1013,7 +1081,7 @@ Module.register("SmartMirror-Decision-Maker", {
   		var tableBody = document.createElement('TBODY');
   		table.appendChild(tableBody);
 		
-		for (var key in this.Debug_infos) {
+		for (var key in self.Debug_infos) {
 			var tr = document.createElement('TR');
 			tr.className = "DebugTablexsmall";
 			tableBody.appendChild(tr);		
@@ -1024,7 +1092,7 @@ Module.register("SmartMirror-Decision-Maker", {
       		tr.appendChild(td);
 			var td = document.createElement('TD');
       		//td.width = '50';
-      		td.appendChild(document.createTextNode(this.Debug_infos[key]));
+      		td.appendChild(document.createTextNode(self.Debug_infos[key]));
 			td.width = '70px';
       		tr.appendChild(td);   
 			
