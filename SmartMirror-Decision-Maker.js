@@ -120,6 +120,7 @@
 			{ name: "MMM-cryptocurrency", words: ["crypto"] },
 			{ name: "weatherforecast", words: ["wforecast"] },
 			{ name: "currentweather", words: ["weather", "wetter"] },
+			{ name: "weather", words: ["weather", "wetter"] },
 			{ name: "newsfeed", words: ["news feed", "newsfeed"] },
 			{ name: "MMM-SimpleLogo", words: ["legato-logo"] },
 			{ name: "MMM-PublicTransportHafas", words: ["transportation"] },
