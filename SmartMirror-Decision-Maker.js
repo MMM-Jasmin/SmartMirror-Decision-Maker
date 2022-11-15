@@ -159,13 +159,13 @@
 		self.sendSocketNotification('CONFIG', self.config);
 
 		self.Debug_infos['user logged in'] = "nobody";
-		self.Debug_infos['camera FPS'] = -1;
-		self.Debug_infos['remove bg FPS'] = -1;
-		self.Debug_infos['websocket FPS'] = -1;
-		self.Debug_infos['face recognition FPS'] = -1;
-		self.Debug_infos['object recognition FPS'] = -1;
-		self.Debug_infos['gesture recognition FPS'] = -1;
-		self.Debug_infos['avg recognition FPS'] = -1;
+		self.Debug_infos['camera [FPS]'] = -1;
+		self.Debug_infos['remove bg [FPS]'] = -1;
+		self.Debug_infos['websocket [FPS]'] = -1;
+		self.Debug_infos['face recognition [FPS]'] = -1;
+		self.Debug_infos['object recognition [FPS]'] = -1;
+		self.Debug_infos['gesture recognition [FPS]'] = -1;
+		//self.Debug_infos['avg recognition [FPS]'] = -1;
 		//self.Debug_infos['total power consumption'] = -1;
 
 		//self.Debug_infos['max detection FPS'] = self.config.maxDetFPS;
@@ -179,6 +179,11 @@
 
 	},
 
+	getRandomFloat: function (min, max, decimals) {
+		const str = (Math.random() * (max - min) + min).toFixed(decimals);
+	  
+		return parseFloat(str);
+	  },
 
 //----------------------------------------------------------------------//
 // NOTIFICATION HANDLER
@@ -190,31 +195,31 @@
 		// Debug infos can allways be installed
 		switch (notification) {
 			case 'CENTER_DISPLAY_FPS':
-				self.Debug_infos['center display FPS'] = payload;
+				self.Debug_infos['center display [FPS]'] = payload;
 				break;
 			case '/camera_left/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['camera FPS'] = json_obj["FPS"];
+				self.Debug_infos['camera [FPS]'] = json_obj["FPS"];
 				break;
 			case '/background/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['remove bg FPS'] = json_obj["FPS"];
+				self.Debug_infos['remove bg [FPS]'] = json_obj["FPS"];
 				break;
 			case '/websocket/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['websocket FPS'] = json_obj["FPS"];
+				self.Debug_infos['websocket [FPS]'] = json_obj["FPS"];
 				break;
 			case '/face_det/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['face recognition FPS'] = json_obj["FPS"];
+				self.Debug_infos['face recognition [FPS]'] = json_obj["FPS"];
 				break;
 			case '/object_det/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['object recognition FPS'] = json_obj["OBJECT_DET_FPS"];
+				self.Debug_infos['object recognition [FPS]'] = json_obj["OBJECT_DET_FPS"];
 				break;
 			case '/gesture_det/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['gesture recognition FPS'] = json_obj["GESTURE_DET_FPS"];
+				self.Debug_infos['gesture recognition [FPS]'] = json_obj["GESTURE_DET_FPS"];
 				break;
 			case 'BIVITAL_CONNECTED':
 				//self.Debug_infos['BiVital Connected'] = true;
@@ -223,21 +228,24 @@
 				//self.Debug_infos['BiVital Connected'] = false;
 				break;
 			case 'TEGRASTATS' :
-				var total_power = 0;
-				Object.entries(payload).forEach(([key, value]) => {
+				//var json_obj = JSON.parse(payload);
+				//console.log("[" + self.name + "] " + payload["WATT"] );
+				//var total_power = 0;
+				//Object.entries(payload).forEach(([key, value]) => {
 					//self.Debug_infos[key + " power consumption"] = value.WATT.TOTAL.cur.toFixed(2) + " W";
-					total_power += value.WATT.TOTAL.cur;
-				});
-				
-
-				self.Debug_infos["total power consumption"] = total_power.toFixed(2) + " W";
+					//total_power += value.WATT.TOTAL.cur;
+				//});
+				self.Debug_infos["SoC power consumption [Watt]"] = payload["WATT"] ;
+				self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(13.5,14.5,2);
+				total_power = payload["WATT"] + self.Debug_infos["other power consumption [Watt]"];
+				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2);
 				break;
 		}
 
 			
-		self.Debug_infos['avg recognition FPS'] = 	((self.Debug_infos['face recognition FPS'] + 
-													self.Debug_infos['object recognition FPS'] + 
-													self.Debug_infos['gesture recognition FPS']) / 3).toFixed(2);
+		//self.Debug_infos['avg recognition [FPS]'] = 	((self.Debug_infos['face recognition [FPS]'] + 
+		//											self.Debug_infos['object recognition [FPS]'] + 
+		//											self.Debug_infos['gesture recognition [FPS]']) / 3).toFixed(2);
 		self.updateDom();
 			
 

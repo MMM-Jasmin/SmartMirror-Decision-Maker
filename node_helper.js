@@ -10,7 +10,7 @@ module.exports = NodeHelper.create({
 		this.con = mysql.createConnection({
   			host: "localhost",
   			user: "smartmirror",
-  			password: "Sm4rt-M1rr0r"
+  			password: "Sm4rtM1rr0r"
 		});
 		this.con.connect(function(err) {
  			if (err) throw err;
