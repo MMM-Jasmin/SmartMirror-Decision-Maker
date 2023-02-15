@@ -165,6 +165,7 @@
 		self.Debug_infos['face recognition [FPS]'] = -1;
 		self.Debug_infos['object recognition [FPS]'] = -1;
 		self.Debug_infos['gesture recognition [FPS]'] = -1;
+		self.Debug_infos['center display [FPS]'] = -1;
 		//self.Debug_infos['avg recognition [FPS]'] = -1;
 		//self.Debug_infos['total power consumption'] = -1;
 
@@ -195,31 +196,31 @@
 		// Debug infos can allways be installed
 		switch (notification) {
 			case 'CENTER_DISPLAY_FPS':
-				self.Debug_infos['center display [FPS]'] = payload;
+				self.Debug_infos['center display [FPS]'] = parseFloat(payload).toFixed(2).toString();
 				break;
 			case '/camera_left/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['camera [FPS]'] = json_obj["FPS"];
+				self.Debug_infos['camera [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
 				break;
 			case '/background/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['remove bg [FPS]'] = json_obj["FPS"];
+				self.Debug_infos['remove bg [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
 				break;
 			case '/websocket/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['websocket [FPS]'] = json_obj["FPS"];
+				self.Debug_infos['websocket [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
 				break;
 			case '/face_det/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['face recognition [FPS]'] = json_obj["FPS"];
+				self.Debug_infos['face recognition [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
 				break;
 			case '/object_det/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['object recognition [FPS]'] = json_obj["OBJECT_DET_FPS"];
+				self.Debug_infos['object recognition [FPS]'] = parseFloat(json_obj["OBJECT_DET_FPS"]).toFixed(2).toString();
 				break;
 			case '/gesture_det/fps':
 				var json_obj = JSON.parse(payload);
-				self.Debug_infos['gesture recognition [FPS]'] = json_obj["GESTURE_DET_FPS"];
+				self.Debug_infos['gesture recognition [FPS]'] = parseFloat(json_obj["GESTURE_DET_FPS"]).toFixed(2).toString();
 				break;
 			case 'BIVITAL_CONNECTED':
 				//self.Debug_infos['BiVital Connected'] = true;
@@ -227,6 +228,9 @@
 			case 'BIVITAL_DISCONNECTED':
 				//self.Debug_infos['BiVital Connected'] = false;
 				break;
+			case '/object_det/hailo8/avg_power':
+					self.Debug_infos['hailo8 power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
+					break;	
 			case 'TEGRASTATS' :
 				//var json_obj = JSON.parse(payload);
 				//console.log("[" + self.name + "] " + payload["WATT"] );
@@ -235,18 +239,30 @@
 					//self.Debug_infos[key + " power consumption"] = value.WATT.TOTAL.cur.toFixed(2) + " W";
 					//total_power += value.WATT.TOTAL.cur;
 				//});
-				self.Debug_infos["SoC power consumption [Watt]"] = payload["WATT"] ;
-				self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(13.5,14.5,2);
-				total_power = payload["WATT"] + self.Debug_infos["other power consumption [Watt]"];
-				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2);
+				self.Debug_infos["Jetson power consumption [Watt]"] = parseFloat(payload["WATT"]).toFixed(2).toString() ;
+				self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(9.5,10.5,2).toFixed(2).toString();
 				break;
+			default:
+				total_power = 0.0
+				if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['hailo8 power consumption [Watt]']);
+				}
+				if (typeof self.Debug_infos["Jetson power consumption [Watt]"] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos["Jetson power consumption [Watt]"]);
+				}
+				if (typeof self.Debug_infos["other power consumption [Watt]"] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos["other power consumption [Watt]"]);
+				}
+				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2).toString();
+				self.updateDom();
+
 		}
 
 			
 		//self.Debug_infos['avg recognition [FPS]'] = 	((self.Debug_infos['face recognition [FPS]'] + 
 		//											self.Debug_infos['object recognition [FPS]'] + 
 		//											self.Debug_infos['gesture recognition [FPS]']) / 3).toFixed(2);
-		self.updateDom();
+		
 			
 
 		//no controle if a selfie is made!
@@ -615,7 +631,7 @@
 					}
 					return;
 				case self.mainManuStateObj.augmentations: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){		
+					if(transcript.includes('back')||transcript.includes('zurück')){		
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					}else if(transcript.includes('aiartmiror')||transcript.includes('ai')||transcript.includes('mirror')||transcript.includes('art')) {
@@ -636,7 +652,7 @@
 				case self.mainManuStateObj.utilities: // switch (self.mainManuState)
 				case self.mainManuStateObj.campus: // switch (self.mainManuState)
 				case self.mainManuStateObj.entertainment: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
+					if(transcript.includes('back')||transcript.includes('zurück')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.main;
 					} else {
@@ -655,7 +671,6 @@
 									module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 									setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
 								}
-								
 							});
 						});
 					}	
