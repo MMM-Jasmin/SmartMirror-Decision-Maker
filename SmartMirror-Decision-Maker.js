@@ -172,12 +172,6 @@
 		//self.Debug_infos['max detection FPS'] = self.config.maxDetFPS;
 		//config.language = "de";
 		//Translator.loadCoreTranslations(config.language);
-
-		/* Tell all module the max FPS numbers like a heartbeat */
-		var intervalId = setInterval(function() {
-  			self.adjust_detection_fps();
-		}, 1000);	
-
 	},
 
 	getRandomFloat: function (min, max, decimals) {
@@ -232,13 +226,6 @@
 					self.Debug_infos['hailo8 power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
 					break;	
 			case 'TEGRASTATS' :
-				//var json_obj = JSON.parse(payload);
-				//console.log("[" + self.name + "] " + payload["WATT"] );
-				//var total_power = 0;
-				//Object.entries(payload).forEach(([key, value]) => {
-					//self.Debug_infos[key + " power consumption"] = value.WATT.TOTAL.cur.toFixed(2) + " W";
-					//total_power += value.WATT.TOTAL.cur;
-				//});
 				self.Debug_infos["Jetson power consumption [Watt]"] = parseFloat(payload["WATT"]).toFixed(2).toString() ;
 				self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(9.5,10.5,2).toFixed(2).toString();
 				break;
@@ -271,14 +258,6 @@
 
 			// all control messages
 			switch (notification) {
-				case 'TRANSCRIPT_EN':
-					console.log("[" + self.name + "] " + "transcript received: " + payload);
-					self.process_string(payload);
-					break;
-				case 'TRANSCRIPT_DE':
-					console.log("[" + self.name + "] " + "transcript received: " + payload);
-					self.process_string(payload)
-					break;
 				case 'MENU_ITEMS':
 					console.log("[" + self.name + "] " + "Menu item has the following items: " + payload);
 					self.MainMenuItems = payload;
@@ -412,7 +391,7 @@
 //----------------------------------------------------------------------//
 	process_rec_person: function(persons){
 		var self = this;
-		// example:  {"1": {"TrackID": 522, "face": {"confidence": 0.9970833725349748, "w_h": [0.1037, 0.09167], "TrackID": 282, "center": [0.52222, 0.59375], "id": 4, "name": "Nils"}, "w_h": [0.375, 0.40625], "name": "person", "center": [0.4963, 0.72083]}}
+		// example:  {"1": {"TrackID": 522, "face": {"confidence": 0.9970833725349748, "w_h": [0.1037, 0.09167], "TrackID": 282, "center": [0.52222, 0.59375], "ID": 4, "name": "Nils"}, "w_h": [0.375, 0.40625], "name": "person", "center": [0.4963, 0.72083]}}
 
 		//console.log("[" + self.name + "] process_rec_person triggered " +  JSON.stringify(persons));
 
@@ -436,7 +415,7 @@
 				//console.log(persons[self.currentpersonTrackID])
 				if (persons[self.currentpersonTrackID].hasOwnProperty('face'))
 					if(persons[self.currentpersonTrackID].face.confidence > 0.3){
-						idToLoginNow = persons[self.currentpersonTrackID].face.id
+						idToLoginNow = persons[self.currentpersonTrackID].face.ID
 					} else {
 						idToLoginNow = 0;
 					}
@@ -452,7 +431,7 @@
 				for(var key in persons)
 					if (persons[key].hasOwnProperty('face')){
 						if(persons[key].face.confidence > 0.3){
-							idToLoginNow = persons[key].face.id;
+							idToLoginNow = persons[key].face.ID;
 						}else{
 							idToLoginNow = 0;
 						}			
@@ -485,54 +464,6 @@
 			setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: false});}, 500)
 		}
 	},
-
-//----------------------------------------------------------------------//
-// ADJUST FPS COUNTER FOR ALL IMAGE MODULES
-// can be turned down if not shown
-//----------------------------------------------------------------------//
-	adjust_detection_fps: function(){
-		var self = this;
-		if (self.objectdetectionshown) {
-			self.sendNotification("smartmirror-object-detection" + "SetFPS", self.config.maxDetFPSforground);
-		} else {
-			if (self.aiartmirrorshown) {
-				self.sendNotification("smartmirror-object-detection" + "SetFPS",10.0)
-			} else {
-				self.sendNotification("smartmirror-object-detection" + "SetFPS", self.config.maxDetFPSbackground)
-			}
-		}
-		if (self.gesturerecognitionshown) {
-			self.sendNotification("smartmirror-gesture-recognition" + "SetFPS", self.config.maxDetFPSforground);
-		} else {
-			if (self.currentuserid == -1)
-				self.sendNotification("smartmirror-gesture-recognition" + "SetFPS", 0.0);
-			else
-				self.sendNotification("smartmirror-gesture-recognition" + "SetFPS", self.config.maxDetFPSbackground);
-		}
-		if (self.facerecognitionshown) {
-			self.sendNotification("smartmirror-facerecognition" + "SetFPS", self.config.maxDetFPSforground);
-		} else {
-			if (self.numberOfRecognisedPersons == 0){
-				self.sendNotification("smartmirror-facerecognition" + "SetFPS", 0.0);
-			} else { 
-				if (self.aiartmirrorshown) {
-					self.sendNotification("smartmirror-facerecognition" + "SetFPS", 5.0);
-				} else {
-					self.sendNotification("smartmirror-facerecognition" + "SetFPS", self.config.maxDetFPSbackground);
-				}
-			}
-		}
-		if (self.aiartmirrorshown) {
-			if (self.numberOfRecognisedPersons == 0) {
-				self.sendNotification("smartmirror-ai-art-mirror_SetFPS", self.config.maxDetFPSbackground);
-			} else {
-				self.sendNotification("smartmirror-ai-art-mirror_SetFPS", self.config.maxDetFPSforground);
-			}
-		} else {
-			self.sendNotification("smartmirror-ai-art-mirror_SetFPS", 0.0);
-		}
-
-	},
 	
 //----------------------------------------------------------------------//
 // STRING PROCESSING
@@ -541,14 +472,6 @@
 	process_string: function(transcript){
 		var self = this
 		if (typeof transcript === 'string'){
-			
-
-			if(transcript.includes('shutdown') || transcript.includes('sudo') || transcript.includes('reboot')){
-				self.sendNotification('smartmirror-TTS-en', "Thorsten no! Stop it!");
-				self.sendNotification('smartmirror-TTS-ger', "Genau Thorsten! Lass es sein!");
-			}else if(transcript.includes('fuck')){
-				self.sendNotification('smartmirror-TTS-en', "language please!");
-			}
 
 			switch (self.mainManuState){
 				case self.mainManuStateObj.main: // switch (self.mainManuState)
