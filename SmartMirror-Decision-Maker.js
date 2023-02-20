@@ -49,12 +49,16 @@
 	timeOFLastPicture: 0,
 	selfieOngoing: false,
 
+	// Main menu
 	MainMenuItems: [],
 	MainMenuItemsAmount: 0,
 	MainMenuSelected: -1,
 	MainMenuSelectedLast: -1,
 	MainMenuItemSize: 0.03, //0.0375, // 0.07
 	MainMenuSelectedTime: 0,
+	MainMenuDistance: -1, // Distance from user hand to selected menu tile
+	MainMenuDistanceLast: -1, // Last distance from user hand to selected menu tile
+	//MainMenuDistanceClickedItem: -1, // Menu item clicked by distance interaction
 
 	newsNextLastTime: {timestamp: undefined},
 	newsDetailLastTime: {timestamp: undefined},
@@ -133,6 +137,9 @@
 			{ name: "SmartMirror-Webserver-ImageView", words: ["image_handler"] },
 			{ name: "SmartMirror-Label-Display", words: ["image_handler"] },
 		],
+
+		MainMenuDistanceEnabled: true, // Enable menu selection by flat hand distance
+		MainMenuDistanceThreshold: 50, // Push distance in mm for flat right hand menu selection
 	},
 
 //----------------------------------------------------------------------//
@@ -602,6 +609,11 @@
 							self.lastYOfFlatRight = item["center"][1]
 							//console.log("[" + self.name + "] center X = " + self.lastXOfFlatRight + "  center Y = " + self.lastYOfFlatRight);
 							self.MainMenuSelected = module.getSelectionIndexForPosition(self.lastXOfFlatRight, self.lastYOfFlatRight);
+							
+							if (self.config.MainMenuDistanceEnabled) {
+								self.MainMenuDistance = item["distance"];
+								//console.debug("Received distance: " + item["distance"]);
+							}
 						}
 					});
 
@@ -659,16 +671,31 @@
 					self.MainMenuSelectedTime = 0;
 					self.sendNotification('MAIN_MENU', 'menu');
 					self.mainManuState = self.mainManuStateObj.main;
+					
+					if (self.config.MainMenuDistanceEnabled) {
+						self.MainMenuDistance = -1;
+						self.MainMenuDistanceLast = -1;
+					}
 				}
 			});
 			
 		}
 
 		if (self.MainMenuSelected != self.MainMenuSelectedLast){
-			console.log("[" + self.name + "] menu select item  " + self.MainMenuSelected );
-			self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
-			setTimeout(() => {self.check_for_menu_click(d.getTime(),self.MainMenuSelected);}, 2500);
-			self.MainMenuSelectedTime  = d.getTime();
+			if (self.config.MainMenuDistanceEnabled) {
+				self.MainMenuDistanceLast = self.MainMenuDistance;
+				console.log("[" + self.name + "] menu hover over item  " + self.MainMenuSelected );
+				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
+			} else {
+				console.log("[" + self.name + "] menu select item  " + self.MainMenuSelected );
+				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
+				setTimeout(() => {self.check_for_menu_click(d.getTime(),self.MainMenuSelected);}, 2500);
+				self.MainMenuSelectedTime  = d.getTime();
+			}
+		}
+
+		if (self.config.MainMenuDistanceEnabled) {
+			self.check_for_menu_distance_click(self.MainMenuSelected);
 		}
 		
 		self.MainMenuSelectedLast = self.MainMenuSelected;
@@ -697,6 +724,19 @@
 		}
 		console.log("[" + self.name + "] item changed.." );
 	},
+
+	check_for_menu_distance_click: function(item) {
+		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && (self.MainMenuDistance != self.MainMenuDistanceLast)) {
+			console.debug("Distance left: " + (self.config.MainMenuDistanceThreshold - (self.MainMenuDistanceLast - self.MainMenuDistance)) / 10 + " cm");
+		}
+		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && ( self.MainMenuDistance <= self.MainMenuDistanceLast - self.config.MainMenuDistanceThreshold)){
+			console.log("[" + self.name + "] menu distance click" );
+			self.sendNotification('MAIN_MENU_CLICK_SELECTED');
+			self.MainMenuSelected = -1;
+			self.MainMenuSelectedLast = -1;
+			self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
+		}
+},
 
 //----------------------------------------------------------------------//
 // this function checks if a certain gesture has been performed over a period of time. timeMemory has to be property of SmartMirror-Decision-Maker class
