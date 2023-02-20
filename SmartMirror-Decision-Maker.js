@@ -14,8 +14,6 @@
 	mainManuStateObj: {
 		main: 0,
 		camera:1,
-		augmentations:2,
-		messevideo:3,
 		application:4,
 		smarthome:5,
 		coffee:6,
@@ -36,8 +34,6 @@
 	objectdetectionshown: false,
 	gesturerecognitionshown: false,
 	personrecognitionshown: false,
-	aiartmirrorshown: false,
-	aiartmirrorshown_random: true,
 	cameraimageshown: false,
 	shortdistanceshown: false,
 
@@ -66,7 +62,6 @@
 	mainMenuHideLastTime: {timestamp: undefined},
 	showAllLastTime: {timestamp: undefined},
 	hideAllLastTime : {timestamp: undefined},
-	aiArtLastTime: {timestamp: undefined},
 	userLoginChangeLastTime: {timestamp: undefined},
 	printLastTime: {timestamp: undefined},
 	newsScrollUpLastTime: {timestamp: undefined},
@@ -108,11 +103,6 @@
 //----------------------------------------------------------------------//
 	defaults: {
 	
-		ai_art_mirror: true,
-
-		maxDetFPSforground: 30.0,
-		maxDetFPSbackground: 16.0,
-	
 		module_list: [
 			{ name: "clock", words: ["clock", "uhr"] },
 			{ name: "calendar", words: ["calendar"] },
@@ -143,7 +133,6 @@
 			{ name: "SmartMirror-Webserver-ImageView", words: ["image_handler"] },
 			{ name: "SmartMirror-Label-Display", words: ["image_handler"] },
 		],
-		speechrec_hotword: ["jarvis","smartmirror"]
 	},
 
 //----------------------------------------------------------------------//
@@ -173,6 +162,7 @@
 		//config.language = "de";
 		//Translator.loadCoreTranslations(config.language);
 	},
+
 
 	getRandomFloat: function (min, max, decimals) {
 		const str = (Math.random() * (max - min) + min).toFixed(decimals);
@@ -216,12 +206,6 @@
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['gesture recognition [FPS]'] = parseFloat(json_obj["GESTURE_DET_FPS"]).toFixed(2).toString();
 				break;
-			case 'BIVITAL_CONNECTED':
-				//self.Debug_infos['BiVital Connected'] = true;
-				break;
-			case 'BIVITAL_DISCONNECTED':
-				//self.Debug_infos['BiVital Connected'] = false;
-				break;
 			case '/object_det/hailo8/avg_power':
 					self.Debug_infos['hailo8 power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
 					break;	
@@ -242,15 +226,7 @@
 				}
 				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2).toString();
 				self.updateDom();
-
 		}
-
-			
-		//self.Debug_infos['avg recognition [FPS]'] = 	((self.Debug_infos['face recognition [FPS]'] + 
-		//											self.Debug_infos['object recognition [FPS]'] + 
-		//											self.Debug_infos['gesture recognition [FPS]']) / 3).toFixed(2);
-		
-			
 
 		//no controle if a selfie is made!
 		//just return and ignor all changes
@@ -273,19 +249,12 @@
 				case 'ALL_MODULES_STARTED':
 					self.sendSocketNotification('LOGGIN_USER', -1);
 					self.sendNotification('smartmirror-TTS-en',"Welcome to the smart mirror!");
-					//setTimeout(() => {self.start_idle_ai_mirror_art();}, 10000);
-					setTimeout(() => {self.logDataPoints();}, 10000);
 					break;
 				case 'DOM_OBJECTS_CREATED':
 					MM.getModules().enumerate(function(module) {
 						if (module.name != "MMM-TomTomTraffic") {
-							module.hide(0, function() {
-							Log.log('Module is hidden.');
-						}, {lockString: "lockString"});
-						setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
-						} else {
-						setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: "MMM-TomTomTraffic", visibility: true});}, 500)
-					}
+							module.hide(0, function() { Log.log('Module is hidden.');}, {lockString: "lockString"});
+						}
 					});
 				break;
 			}
@@ -294,16 +263,6 @@
 
 	},
 
-//----------------------------------------------------------------------//
-// Log Data points for data augmentation (Master Thesis)
-//----------------------------------------------------------------------//
-	logDataPoints: function(){
-		self = this
-		var nextLogInSeconds = Math.floor(Math.random() * 40) + 5;
-
-		self.sendNotification('FAKE_INTERACTION')
-		setTimeout(() => {self.logDataPoints();}, nextLogInSeconds * 1000)
-	},
 //----------------------------------------------------------------------//
 // SOCKET NOTIFICATION HANDLER
 //----------------------------------------------------------------------//
@@ -334,9 +293,6 @@
 				self.mainManuState = self.mainManuStateObj.main;
 				//center display closed..
 				self.remove_everything_center_display();
-				if(self.config.ai_art_mirror == true){
-					setTimeout(() => {self.start_idle_ai_mirror_art();}, 20000);
-				}	
 			}
 		}else if(notification === 'GREET_USER_RESULT'){
 			if (payload[0] == "de")
@@ -370,13 +326,11 @@
 					if(user_config[key]) {
 						if (module.hidden){
 							module.show(1000, function() {Log.log(module.name + ' is shown.');},{lockString: "lockString"});
-							setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: true});}, 500)
 						}
 							
 					}else{
 						 if(!module.hidden){
 							module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"})
-							setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
 						}
 					}					
 					});
@@ -457,11 +411,6 @@
 			self.currentuserid = idToLoginNow;
 			console.log("[" + self.name + "] changing current user to: " + idToLoginNow );
 			self.sendNotification('USER_LOGIN', idToLoginNow);
-			if(self.readingMode){
-				self.readingMode = false
-				self.leaveReadingMode()
-			}
-			setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: false});}, 500)
 		}
 	},
 	
@@ -478,12 +427,6 @@
 					if(transcript.includes('camera')||transcript.includes('kamera')||transcript.includes('demonstration')||transcript.includes('detections')){				
 						self.sendNotification('MAIN_MENU', 'camera');
 						self.mainManuState = self.mainManuStateObj.camera;
-					}else if(transcript.includes('image')||transcript.includes('augmentations')){				
-						self.sendNotification('MAIN_MENU', 'augmentations');
-						self.mainManuState = self.mainManuStateObj.augmentations;
-					}else if(transcript.includes('messe')||transcript.includes('video')||transcript.includes('messevideo')){				
-						self.sendNotification('MAIN_MENU', 'messevideo');
-						self.mainManuState = self.mainManuStateObj.messevideo;
 					}else if(transcript.includes('application')||transcript.includes('anwendung')){				
 						self.sendNotification('MAIN_MENU', 'application');
 						self.mainManuState = self.mainManuStateObj.application;
@@ -511,28 +454,18 @@
 					}else if(transcript.includes('image')||transcript.includes('bild')){				
 						self.sendNotification('CENTER_DISPLAY', 'TOGGLE');
 						self.cameraimageshown = !self.cameraimageshown;
-						setTimeout(() => {
-							self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-camera-image', visibility: self.cameraimageshown});
-							self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Short-Distance', visibility: self.shortdistanceshown});
-						}, 500);
 					}else if(transcript.includes('distance')||transcript.includes('distanz')){				
 						self.sendNotification('CENTER_DISPLAY', 'DISTANCE');
 						self.shortdistanceshown = !self.shortdistanceshown
-						if(self.cameraimageshown){
-							setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Short-Distance', visibility: self.shortdistanceshown});}, 500)
-						}
 					}else if(transcript.includes('object')){				
 						self.sendNotification('CENTER_DISPLAY', 'OBJECT');
 						self.objectdetectionshown = !(self.objectdetectionshown);
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
 					}else if(transcript.includes('gesture')||transcript.includes('hand')){				
 						self.sendNotification('CENTER_DISPLAY', 'GESTURE');
 						self.gesturerecognitionshown = !(self.gesturerecognitionshown);
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
 					}else if(transcript.includes('face')||transcript.includes('gesicht')){				
 						self.sendNotification('CENTER_DISPLAY', 'FACE');
 						self.facerecognitionshown = !(self.facerecognitionshown); 
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
 					}else if(transcript.includes('person')||transcript.includes('person')){
 						self.sendNotification('CENTER_DISPLAY', 'PERSON');
 						self.personrecognitionshown = !(self.personrecognitionshown);
@@ -546,30 +479,6 @@
 						self.gesturerecognitionshown = true;
 						self.cameraimageshown = true;
 						self.personrecognitionshown = true;
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-camera-image', visibility: self.cameraimageshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Person-Recognition', visibility: true});}, 500)	
-					}
-					return;
-				case self.mainManuStateObj.augmentations: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){		
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.main;
-					}else if(transcript.includes('aiartmiror')||transcript.includes('ai')||transcript.includes('mirror')||transcript.includes('art')) {
-						self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
-						self.aiartmirrorshown = ! self.aiartmirrorshown;
-						setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});}, 500)
-					}else if(transcript.includes('randomsytle')) {
-						self.sendNotification('smartmirror-ai-art-mirror','RANDOM_STYLE');
-						self.aiartmirrorshown_random = ! self.aiartmirrorshown_random;
-					}else if(transcript.includes('nextsytle')) {
-						//self.sendNotification('smartmirror-ai-art-mirror','NEXT_STYLE');
-					}else if(transcript.includes('prevsytle')) {
-						//self.sendNotification('smartmirror-ai-art-mirror','PREV_STYLE');
-					}else if(transcript.includes('sourcesytle')) {
-						//self.sendNotification('smartmirror-ai-art-mirror','DISP_SOURCE');
 					}
 					return;
 				case self.mainManuStateObj.utilities: // switch (self.mainManuState)
@@ -588,11 +497,9 @@
 							MM.getModules().withClass(element.name).enumerate(function(module) {
 								if (module.hidden) {
 									module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-									setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: true});}, 500)
 								}
 								else {
 									module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-									setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
 								}
 							});
 						});
@@ -608,7 +515,7 @@
 					}
 					return;
 				case self.mainManuStateObj.coffee: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
+					if(transcript.includes('back')||transcript.includes('zurück')){				
 						self.sendNotification('MAIN_MENU', 'smarthome');
 						self.mainManuState = self.mainManuStateObj.smarthome;
 					} else if (transcript.includes('stats')) {
@@ -621,11 +528,9 @@
 							MM.getModules().withClass(element.name).enumerate(function(module) {
 								if (module.hidden) {
 									module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-									setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: true});}, 500)
 								}
 								else {
 									module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-									setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: module.name, visibility: false});}, 500)
 								}
 							});
 					});			
@@ -663,7 +568,7 @@
 					}
 					return;
 				case self.mainManuStateObj.user_settings: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
+					if(transcript.includes('back')||transcript.includes('zurück')){				
 						self.sendNotification('MAIN_MENU', 'menu');
 						self.mainManuState = self.mainManuStateObj.preferences;
 					}
@@ -685,34 +590,8 @@
 		gestures_list.forEach(function (item) {
 			switch (item["name"]){
 				case "flat_right":
+
 					self.flatRightDetected = true;
-
-					MM.getModules().withClass("smartmirror-main-menu-center").enumerate(function(module) {
-						if (module.hidden && self.check_for_validity(self.mainMenuShowLastTime, 0.2, 1.4)){
-							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-							self.sendNotification('GESTURE_INTERACTION', 'menu_show') //send this notification when user desires to open the main menu via gesture
-						}else if(!module.hidden){
-							self.lastTimeFlatRight = new Date();
-							self.lastYOfFlatRight = item["center"][1]
-							self.lastXOfFlatRight = item["center"][0]
-
-							var offset = 0.4 - (self.MainMenuItemSize * (self.MainMenuItemsAmount/2)) - 0.02;
-	
-							self.MainMenuSelected = -1;
-
-							var i;
-							for( i = 0; i < self.MainMenuItemsAmount; i ++){
-								var a = (offset + i * self.MainMenuItemSize);
-								var b = (offset + (i+1) * self.MainMenuItemSize)
-			
-								if(a < self.lastYOfFlatRight && self.lastYOfFlatRight < b ){
-									self.MainMenuSelected = i;
-									Log.log("MainMenuSelected ", self.MainMenuSelected) //alles auÃŸer -1
-								}
-							}
-						}
-					});
-
 					MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
 						if (module.hidden && self.check_for_validity(self.mainMenuShowLastTime, 0.2, 1.4)){
 							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
@@ -730,12 +609,7 @@
 				case "thumbs_up_right":
 				
 					if (((self.facerecognitionshown === false) || (self.objectdetectionshown === false) || (self.gesturerecognitionshown === false )) 
-					&& self.check_for_validity(self.showAllLastTime, 0.5, 2.5)) {
-						if(self.aiartmirrorshown){
-							self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
-							self.aiartmirrorshown = false;
-							setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});}, 500)
-						}				
+					&& self.check_for_validity(self.showAllLastTime, 0.5, 2.5)) {			
 						console.log("[" + self.name + "] show all..." );
 						self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
 						self.sendNotification('GESTURE_INTERACTION', 'SHOWALL'); //send this notification when user desires to toggle all camera options
@@ -744,24 +618,14 @@
 						self.gesturerecognitionshown = true;
 						self.cameraimageshown = true;
 						self.personrecognitionshown = true;
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-camera-image', visibility: self.cameraimageshown});}, 500)
-						setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Person-Recognition', visibility: true});}, 500)
 					}
 					break;
 				case "thumbs_up_left":
-					if (self.aiartmirrorshown === false && self.check_for_validity(self.aiArtLastTime, 0.5, 1.5)) {
-						self.remove_everything_center_display();
-						self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
-						self.sendNotification('GESTURE_INTERACTION', 'STYLE_TRANSFERE'); //send this notification when user desires to turn air art on
-						self.aiartmirrorshown = true;
-						self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});
-					}
 					break;
 				case "thumbs_down_left":
+					break;
 				case "thumbs_down_right":
+
 					if (self.check_for_validity(self.hideAllLastTime, 0.5, 2.5))
 					if(self.facerecognitionshown || self.objectdetectionshown || self.gesturerecognitionshown || self.personrecognitionshown || self.aiartmirrorshown ){
 							self.remove_everything_center_display();
@@ -769,63 +633,22 @@
 					}
 					break;
 				case "okay_left":
-					MM.getModules().withClass('MMM-News').enumerate(function(module) {
-						if(!module.hidden && self.currentuserid != -1 && self.readingMode === false && self.check_for_validity(self.newsDetailLastTime, 0.5, 2.5)) {
-							self.readingMode = undefined;
-							self.enterReadingMode();
-							setTimeout(() => {self.readingMode = true;}, 1000);
-						
-						} else if (module.hidden && self.readingMode === true && self.check_for_validity(self.newsDetailLastTime, 0.5, 2.5)) {
-							self.readingMode = undefined;
-							self.restoreView();
-							self.leaveReadingMode();
-							setTimeout(() => {self.readingMode = false;}, 1000);						
-						}
-					})
+
 					break;
 				case "okay_right":
-					MM.getModules().withClass('MMM-News').enumerate(function(module) {
-						if(!module.hidden && self.readingMode === false && self.check_for_validity(self.newsNextLastTime, 2, 2.5)) {
-							self.sendNotification('NEWS_NEXT')
-							self.sendNotification('GESTURE_INTERACTION', 'news_next')
-						}
-					})
-					
+										
 					break;
 				case "one_left":
-					if(self.readingMode && self.check_for_validity(self.newsScrollUpLastTime, 0.5, 2.5)){
-						self.sendNotification('NEWS_DETAIL_SCROLLUP')
-					}
+
 					break;
 				case "one_right":
-					if(self.readingMode && self.check_for_validity(self.newsScrollDownLastTime, 0.5, 2.5)){
-						self.sendNotification('NEWS_DETAIL_SCROLLDOWN')
-					} else if(!self.readingMode){
-						MM.getModules().withClass('MMM-ITCH-IO').enumerate(function(module) {
-							if(!module.hidden &&  self.check_for_validity(self.gamesNextLastTime, 2, 2.5)) {
-								self.sendNotification('NEXT_GAME_PREVIEW')
-								self.sendNotification('GESTURE_INTERACTION', 'games_next')
-							}
-						})
-					}
-
+					
 					break;
 			}
 		});
 
 		if((self.flatRightDetected == false)){ //&& (self.MainMenuSelectedLast != -1)
-			MM.getModules().withClass("smartmirror-main-menu-center").enumerate(function(module) {
-					if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 1, 1.5)){
-						module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
-						self.sendNotification('GESTURE_INTERACTION', 'menu_hide') //send this notification when user desires to close the main menu via gesture
-
-						self.MainMenuSelected = -1;
-						self.MainMenuSelectedLast = -1;
-						self.MainMenuSelectedTime = 0;
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.main;
-					}
-				});
+			
 			MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
 				if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 1, 1.5)){
 					module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
@@ -853,27 +676,9 @@
 		if ((gestures_list.filter(function(left_two) { return left_two.name === 'two_left'; }).length > 0) &&
 		   (gestures_list.filter(function(right_two) { return right_two.name === 'two_right'; }).length > 0) && 
 		   (self.aiartmirrorshown == true || self.cameraimageshown == true) && self.check_for_validity(self.printLastTime, 1, 1.5)) {
-			var d = new Date();
-			if((d.getTime() - 15000) > self.timeOFLastPicture){ 
-  				//self.sendNotification("SHOW_ALERT", {type: "notification", message: "taking a picture"});
-				self.sendNotification('TAKE_SELFIE', "ART");
-				self.timeOFLastPicture = d.getTime();
-				if (self.aiartmirrorshown_random == true){
-					self.sendNotification('smartmirror-ai-art-mirror','RANDOM_STYLE');
-					self.selfieOngoing = true;
-					setTimeout(() => {self.selfietaken();}, 15000);
-				}
-			}
+			
+			
 		}
-	},
-
-//----------------------------------------------------------------------//
-// AFTER SELLFIE
-// if a selfie is taken, the controles have to be turned on again
-//----------------------------------------------------------------------//
-	selfietaken:function(){
-		self.selfieOngoing = false;
-		self.sendNotification('smartmirror-ai-art-mirror','RANDOM_STYLE');
 	},
 
 //----------------------------------------------------------------------//
@@ -914,46 +719,6 @@
 	},
 
 //----------------------------------------------------------------------//
-// ENABLE NEWS READING MODE
-//----------------------------------------------------------------------//
-	enterReadingMode: function(){
-		var self = this
-		Log.log("Entering reading mode")
-		self.sendNotification('GESTURE_INTERACTION', 'news_reading_mode_open')
-		MM.getModules().withClass(self.applicationClass).enumerate(function(module) {
-			self.applicationsViewStates.push({
-				name: module.name,
-				visibility: !module.hidden
-			})
-			module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
-		});
-		self.sendNotification('NEWS_DETAIL', {})
-	},
-
-//----------------------------------------------------------------------//
-// RESTORE VIEW AFTER READING MODE
-//----------------------------------------------------------------------//
-	restoreView: function(){
-		var self = this
-		Log.log("Leaving reading mode")
-		self.sendNotification('GESTURE_INTERACTION', 'news_reading_mode_close')
-		MM.getModules().withClass(self.applicationClass).enumerate(function(module) {
-			const item = self.applicationsViewStates.find(item => item.name == module.name)
-			if(item.visibility){
-				module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-			}
-		})
-	},
-
-//----------------------------------------------------------------------//
-// LEAVE REAING MODE
-//----------------------------------------------------------------------//
-	leaveReadingMode : function(){
-		self.sendNotification('NEWS_DETAIL_CLOSE', {})
-		self.applicationsViewStates = []
-	},
-
-//----------------------------------------------------------------------//
 // REMOVES EVERYTHING FROM CENTER DISPLAY
 // is triggered by thumbs down for example
 //----------------------------------------------------------------------//
@@ -964,15 +729,7 @@
 		self.objectdetectionshown = false;
 		self.gesturerecognitionshown = false;
 		self.personrecognitionshown = false;
-		self.aiartmirrorshown = false;
 		self.cameraimageshown = false;
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-facerecognition', visibility: self.facerecognitionshown});}, 500)
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Object-Detection', visibility: self.objectdetectionshown});}, 500)
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Gesture-Recognition', visibility: self.gesturerecognitionshown});}, 500)
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-camera-image', visibility: self.cameraimageshown});}, 500)
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Short-Distance', visibility: false});}, 500)
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'SmartMirror-Person-Recognition', visibility: false});}, 500)
-		setTimeout(() => {self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});}, 500)
 	},
 
 //----------------------------------------------------------------------//
@@ -987,27 +744,6 @@
 		}
 	},
 
-//----------------------------------------------------------------------//
-// START AI ART MIRROR IF IDLE
-//----------------------------------------------------------------------//
-	start_idle_ai_mirror_art: function(){
-		var self = this;
-	 	if(self.currentuserid == -1) {
-			if (self.aiartmirrorshown == false){
-				MM.getModules().withClass("smartmirror-center-display").enumerate(function(module) {
-					module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-				});
-				MM.getModules().withClass("SmartMirror-Image-Handler").enumerate(function(module) {
-					module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-				});
-				self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
-				self.aiartmirrorshown = true;
-				self.sendNotification("SHOW_ALERT", {type: "notification", message: "showing ai art as idle screen!"});
-				setTimeout(()=>{self.sendNotification('MODULE_VISIBILITY_STATUS', {moduleName: 'smartmirror-ai-art-mirror', visibility: self.aiartmirrorshown});}, 500)
-			}
-		} 
-	},
- 
 //----------------------------------------------------------------------//
 // CREATE DOM
 // shows debug information in the this.Debug_infos[key] dictionary
@@ -1041,9 +777,7 @@
       		//td.width = '50';
       		td.appendChild(document.createTextNode(self.Debug_infos[key]));
 			td.width = '70px';
-      		tr.appendChild(td);   
-			
-			
+      		tr.appendChild(td);
 		} 
 
   		myTableDiv.appendChild(table);
