@@ -57,7 +57,7 @@
 	MainMenuItemSize: 0.03, //0.0375, // 0.07
 	MainMenuSelectedTime: 0,
 	MainMenuDistance: -1, // Distance from user hand to selected menu tile
-	MainMenuDistanceLast: -1, // Last distance from user hand to selected menu tile
+	MainMenuDistanceHoverStart: -1, // Last distance from user hand to selected menu tile
 	//MainMenuDistanceClickedItem: -1, // Menu item clicked by distance interaction
 
 	newsNextLastTime: {timestamp: undefined},
@@ -139,7 +139,7 @@
 		],
 
 		MainMenuDistanceEnabled: true, // Enable menu selection by flat hand distance
-		MainMenuDistanceThreshold: 50, // Push distance in mm for flat right hand menu selection
+		MainMenuDistanceButtonPush: 50, // Push distance in mm for flat right hand menu selection
 	},
 
 //----------------------------------------------------------------------//
@@ -674,7 +674,7 @@
 					
 					if (self.config.MainMenuDistanceEnabled) {
 						self.MainMenuDistance = -1;
-						self.MainMenuDistanceLast = -1;
+						self.MainMenuDistanceHoverStart = -1;
 					}
 				}
 			});
@@ -683,7 +683,7 @@
 
 		if (self.MainMenuSelected != self.MainMenuSelectedLast){
 			if (self.config.MainMenuDistanceEnabled) {
-				self.MainMenuDistanceLast = self.MainMenuDistance;
+				self.MainMenuDistanceHoverStart = self.MainMenuDistance;
 				console.log("[" + self.name + "] menu hover over item  " + self.MainMenuSelected );
 				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
 			} else {
@@ -726,15 +726,21 @@
 	},
 
 	check_for_menu_distance_click: function(item) {
-		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && (self.MainMenuDistance != self.MainMenuDistanceLast)) {
-			console.debug("Distance left: " + (self.config.MainMenuDistanceThreshold - (self.MainMenuDistanceLast - self.MainMenuDistance)) / 10 + " cm");
-		}
-		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && ( self.MainMenuDistance <= self.MainMenuDistanceLast - self.config.MainMenuDistanceThreshold)){
-			console.log("[" + self.name + "] menu distance click" );
-			self.sendNotification('MAIN_MENU_CLICK_SELECTED');
-			self.MainMenuSelected = -1;
-			self.MainMenuSelectedLast = -1;
-			self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
+		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1)) {
+			if (self.MainMenuDistance != self.MainMenuDistanceHoverStart) {
+				console.debug("Distance left: " + (self.config.MainMenuDistanceButtonPush - (self.MainMenuDistanceHoverStart - self.MainMenuDistance)) / 10 + " cm");
+			}
+			if (self.MainMenuDistance <= self.MainMenuDistanceHoverStart - self.config.MainMenuDistanceButtonPush){
+				// 
+				console.log("[" + self.name + "] menu distance click" );
+				self.sendNotification('MAIN_MENU_CLICK_SELECTED');
+				self.MainMenuSelected = -1;
+				self.MainMenuSelectedLast = -1;
+				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
+			}
+			if (self.MainMenuDistance > self.MainMenuDistanceHoverStart) {
+				self.MainMenuDistanceHoverStart = self.MainMenuDistance;
+			}
 		}
 },
 
