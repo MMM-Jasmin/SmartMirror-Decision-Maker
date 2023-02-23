@@ -10,7 +10,6 @@
 
  Module.register("SmartMirror-Decision-Maker", {
 
-
 	mainManuStateObj: {
 		main: 0,
 		camera:1,
@@ -23,8 +22,6 @@
 		campus:10,
 		entertainment:11
 	},
-
-	mainManuState: 0,
 
 	numberOfRecognisedPersons: 0,
 	currentuserid: -1,
@@ -48,17 +45,6 @@
 	timeOfLastCoffee: 0,
 	timeOFLastPicture: 0,
 	selfieOngoing: false,
-
-	// Main menu
-	MainMenuItems: [],
-	MainMenuItemsAmount: 0,
-	MainMenuSelected: -1,
-	MainMenuSelectedLast: -1,
-	MainMenuItemSize: 0.03, //0.0375, // 0.07
-	MainMenuSelectedTime: 0,
-	MainMenuDistance: -1, // Distance from user hand to selected menu tile
-	MainMenuDistanceHoverStart: -1, // Last distance from user hand to selected menu tile
-	//MainMenuDistanceClickedItem: -1, // Menu item clicked by distance interaction
 
 	newsNextLastTime: {timestamp: undefined},
 	newsDetailLastTime: {timestamp: undefined},
@@ -101,12 +87,10 @@
 		"SmartMirror-Main-Menu-Tiles"
 	],
 
-
 //----------------------------------------------------------------------//
 // CONFIG DEFAULTS
 //----------------------------------------------------------------------//
 	defaults: {
-	
 		module_list: [
 			{ name: "clock", words: ["clock", "uhr"] },
 			{ name: "calendar", words: ["calendar"] },
@@ -137,9 +121,6 @@
 			{ name: "SmartMirror-Webserver-ImageView", words: ["image_handler"] },
 			{ name: "SmartMirror-Label-Display", words: ["image_handler"] },
 		],
-
-		MainMenuDistanceEnabled: true, // Enable menu selection by flat hand distance
-		MainMenuDistanceButtonPush: 50, // Push distance in mm for flat right hand menu selection
 	},
 
 //----------------------------------------------------------------------//
@@ -149,9 +130,6 @@
 		var self = this;
 		self.currentuserid = -1;
 		console.log(self.name + " has started...");
-		self.sendNotification('MAIN_MENU', 'menu');
-		self.mainManuState = self.mainManuStateObj.main;
-		console.log("[" + self.name + "] " + "sending MAIN_MENU: none");
 		self.sendSocketNotification('CONFIG', self.config);
 
 		self.Debug_infos['user logged in'] = "nobody";
@@ -170,10 +148,8 @@
 		//Translator.loadCoreTranslations(config.language);
 	},
 
-
 	getRandomFloat: function (min, max, decimals) {
 		const str = (Math.random() * (max - min) + min).toFixed(decimals);
-	  
 		return parseFloat(str);
 	  },
 
@@ -181,7 +157,6 @@
 // NOTIFICATION HANDLER
 //----------------------------------------------------------------------//
 	notificationReceived: function(notification, payload, sender) {
-
 		var self = this;
 
 		// Debug infos can allways be installed
@@ -235,20 +210,14 @@
 				self.updateDom();
 		}
 
-		//no controle if a selfie is made!
+		//no control if a selfie is made!
 		//just return and ignor all changes
 		if (self.selfieOngoing == false){
-
 			// all control messages
 			switch (notification) {
-				case 'MENU_ITEMS':
-					console.log("[" + self.name + "] " + "Menu item has the following items: " + payload);
-					self.MainMenuItems = payload;
-					self.MainMenuItemsAmount = payload.length;
-					break;
-				case 'MENU_CLICKED':
-					console.log("[" + self.name + "] " + "Menu item was clicked: " + payload);
-					self.process_string(payload)
+				case 'MENU_SELECTED':
+					console.info("[" + self.name + "] " + "Menu item was selected: " + payload);
+					self.process_menu_selection(payload)
 					break;
 				case 'RECOGNIZED_PERSONS':
 					self.process_rec_person(payload.RECOGNIZED_PERSONS);
@@ -267,7 +236,6 @@
 			}
 		}		
 		return;
-
 	},
 
 //----------------------------------------------------------------------//
@@ -280,36 +248,30 @@
 			//console.log("test " + JSON.parse(payload)[0])
 			
 			self.adjustViewLogin((JSON.parse(payload))[0]);
-
-			
 			self.Debug_infos['user logged in'] = JSON.parse(payload)[0]["name"];
 			self.updateDom();			
-	
+
 			if (JSON.parse(payload)[0]["ID"] > 0) {
-				
 				//self.sendNotification('smartmirror-TTS-en',"Hello, nice to see you");
 				var d = new Date();
 				if((d.getTime() - self.timeOFLastGreet > self.timebetweenGreets)){
 					self.sendSocketNotification("GREET_USER",[JSON.parse(payload)[0]["language"],JSON.parse(payload)[0]["name"]])
 					self.timeOFLastGreet = d.getTime();   
 				}
-			}else if (JSON.parse(payload)[0]["ID"] == -1) {
+			} else if (JSON.parse(payload)[0]["ID"] == -1) {
 				//if nodody is in front of the mirror close everything
 				//menu closed..
-				self.sendNotification('MAIN_MENU', 'menu');
-				self.mainManuState = self.mainManuStateObj.main;
+				// self.sendNotification('MAIN_MENU', 'menu');
 				//center display closed..
 				self.remove_everything_center_display();
 			}
-		}else if(notification === 'GREET_USER_RESULT'){
+		} else if (notification === 'GREET_USER_RESULT'){
 			if (payload[0] == "de")
 				self.sendNotification('smartmirror-TTS-ger',payload[1]);
 			else if (payload[0] == "en")
 				self.sendNotification('smartmirror-TTS-en',payload[1]);
 
 			self.sendNotification("SHOW_ALERT", {type: "notification", message: payload[1]});
-
-
 		}
 	},
 
@@ -332,12 +294,12 @@
 					MM.getModules().withClass(element.name).enumerate(function(module) {
 					if(user_config[key]) {
 						if (module.hidden){
-							module.show(1000, function() {Log.log(module.name + ' is shown.');},{lockString: "lockString"});
+							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 						}
 							
 					}else{
-						 if(!module.hidden){
-							module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"})
+						 if (!module.hidden){
+							module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"})
 						}
 					}					
 					});
@@ -353,9 +315,7 @@
 	process_rec_person: function(persons){
 		var self = this;
 		// example:  {"1": {"TrackID": 522, "face": {"confidence": 0.9970833725349748, "w_h": [0.1037, 0.09167], "TrackID": 282, "center": [0.52222, 0.59375], "ID": 4, "name": "Nils"}, "w_h": [0.375, 0.40625], "name": "person", "center": [0.4963, 0.72083]}}
-
 		//console.log("[" + self.name + "] process_rec_person triggered " +  JSON.stringify(persons));
-
 
 		if (self.numberOfRecognisedPersons != Object.keys(persons).length){
 
@@ -420,168 +380,30 @@
 			self.sendNotification('USER_LOGIN', idToLoginNow);
 		}
 	},
-	
+
 //----------------------------------------------------------------------//
-// STRING PROCESSING
-// can be received by menu or speech recognition
+// PROCESS MENU SELECTION
 //----------------------------------------------------------------------//
-	process_string: function(transcript){
-		var self = this
-		if (typeof transcript === 'string'){
+	process_menu_selection: function(selection) {
+		var self = this;
 
-			switch (self.mainManuState){
-				case self.mainManuStateObj.main: // switch (self.mainManuState)
-					if(transcript.includes('camera')||transcript.includes('kamera')||transcript.includes('demonstration')||transcript.includes('detections')){				
-						self.sendNotification('MAIN_MENU', 'camera');
-						self.mainManuState = self.mainManuStateObj.camera;
-					}else if(transcript.includes('application')||transcript.includes('anwendung')){				
-						self.sendNotification('MAIN_MENU', 'application');
-						self.mainManuState = self.mainManuStateObj.application;
-					}else if(transcript.includes('utilities')||transcript.includes('nÃ¼tzliches')){				
-						self.sendNotification('MAIN_MENU', 'utilities');
-						self.mainManuState = self.mainManuStateObj.utilities;
-					}else if(transcript.includes('campus')||transcript.includes('kampus')){				
-						self.sendNotification('MAIN_MENU', 'campus');
-						self.mainManuState = self.mainManuStateObj.campus;
-					}else if(transcript.includes('entertainment')||transcript.includes('unterhaltung')){				
-						self.sendNotification('MAIN_MENU', 'entertainment');
-						self.mainManuState = self.mainManuStateObj.entertainment;
-					}else if(transcript.includes('smarthome')){				
-						self.sendNotification('MAIN_MENU', 'smarthome');
-						self.mainManuState = self.mainManuStateObj.smarthome;
-					}else if(transcript.includes('preference')||transcript.includes('einstellung')){				
-						self.sendNotification('MAIN_MENU', 'preferences');
-						self.mainManuState = self.mainManuStateObj.preferences;
-					}
-					return;
-				case self.mainManuStateObj.camera: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.main;
-					}else if(transcript.includes('image')||transcript.includes('bild')){				
-						self.sendNotification('CENTER_DISPLAY', 'TOGGLE');
-						self.cameraimageshown = !self.cameraimageshown;
-					}else if(transcript.includes('distance')||transcript.includes('distanz')){				
-						self.sendNotification('CENTER_DISPLAY', 'DISTANCE');
-						self.shortdistanceshown = !self.shortdistanceshown
-					}else if(transcript.includes('object')){				
-						self.sendNotification('CENTER_DISPLAY', 'OBJECT');
-						self.objectdetectionshown = !(self.objectdetectionshown);
-					}else if(transcript.includes('gesture')||transcript.includes('hand')){				
-						self.sendNotification('CENTER_DISPLAY', 'GESTURE');
-						self.gesturerecognitionshown = !(self.gesturerecognitionshown);
-					}else if(transcript.includes('face')||transcript.includes('gesicht')){				
-						self.sendNotification('CENTER_DISPLAY', 'FACE');
-						self.facerecognitionshown = !(self.facerecognitionshown); 
-					}else if(transcript.includes('person')||transcript.includes('person')){
-						self.sendNotification('CENTER_DISPLAY', 'PERSON');
-						self.personrecognitionshown = !(self.personrecognitionshown);
-					}else if(transcript.includes('hide all')||transcript.includes('HIDEALL')||transcript.includes('versteck alles')||transcript.includes('remove all')){
-						self.remove_everything_center_display();
-							
-					}else if(transcript.includes('show all')||transcript.includes('SHOWALL')){
-						self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
-						self.facerecognitionshown = true;
-						self.objectdetectionshown = true;
-						self.gesturerecognitionshown = true;
-						self.cameraimageshown = true;
-						self.personrecognitionshown = true;
-					}
-					return;
-				case self.mainManuStateObj.utilities: // switch (self.mainManuState)
-				case self.mainManuStateObj.campus: // switch (self.mainManuState)
-				case self.mainManuStateObj.entertainment: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.main;
+		self.config.module_list.forEach(function(element) {
+			var wordIncluded = false;					
+			element.words.forEach(function(word){
+				if (selection.includes(word)) {
+					wordIncluded = true
+				}
+			});
+			if (wordIncluded) {
+				MM.getModules().withClass(element.name).enumerate(function(module) {
+					if (module.hidden) {
+						module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 					} else {
-						self.config.module_list.forEach(function(element) {
-							var wordIncluded = false;					
-							element.words.forEach(function(word){
-							if(transcript.includes(word))
-								wordIncluded = true	});
-						if (wordIncluded)
-							MM.getModules().withClass(element.name).enumerate(function(module) {
-								if (module.hidden) {
-									module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-								}
-								else {
-									module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-								}
-							});
-						});
-					}	
-					return;	
-				case self.mainManuStateObj.smarthome: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.main;
-					} else if(transcript.includes('coffee')){
-						self.sendNotification('MAIN_MENU', 'coffee');
-						self.mainManuState = self.mainManuStateObj.coffee;
+						module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
 					}
-					return;
-				case self.mainManuStateObj.coffee: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
-						self.sendNotification('MAIN_MENU', 'smarthome');
-						self.mainManuState = self.mainManuStateObj.smarthome;
-					} else if (transcript.includes('stats')) {
-						self.config.module_list.forEach(function(element) {
-						var wordIncluded = false;					
-						element.words.forEach(function(word){
-							if(word == "coffeebot")
-								wordIncluded = true	});
-						if (wordIncluded)
-							MM.getModules().withClass(element.name).enumerate(function(module) {
-								if (module.hidden) {
-									module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-								}
-								else {
-									module.hide(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-								}
-							});
-					});			
-
-					} else {
-				
-						var d = new Date();
-						if(d.getTime() - self.timeOfLastCoffee > 30000){
-						
-							self.timeOfLastCoffee = d.getTime();
-							self.sendNotification('smartmirror-TTS-ger',"Ich sage es der Kaffe Maschine. Denk an deine Tasse bitte!");
-							self.sendNotification("SHOW_ALERT", {type: "notification", message: "Kaffee kommt! Stell sicher, dass eine Tasse drunter steht!"});
-
-							if (transcript.includes('singlecoffee')){
-								self.sendNotification('COFFEBOT_MAKE', 'COFFEE');
-							} else if (transcript.includes('doublecoffee')){
-								self.sendNotification('COFFEBOT_MAKE', 'COFFEE_DOUBLE');
-							} else if (transcript.includes('espresso')){
-								self.sendNotification('COFFEBOT_MAKE', 'ESPRESSO');
-							} else if (transcript.includes('doubleespresso')){
-								self.sendNotification('COFFEBOT_MAKE', 'ESPRESSO_DOUBLE');
-							}
-						}else{
-							self.sendNotification('smartmirror-TTS-ger',"Dein Kaffe ist noch nicht durch!");
-						}
-					}
-					return;
-				case self.mainManuStateObj.preferences: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurÃ¼ck')){				
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.main;
-					} else if(transcript.includes('user')){
-						self.sendNotification('MAIN_MENU', 'user_settings');
-						self.mainManuState = self.mainManuStateObj.user_settings;
-					}
-					return;
-				case self.mainManuStateObj.user_settings: // switch (self.mainManuState)
-					if(transcript.includes('back')||transcript.includes('zurück')){				
-						self.sendNotification('MAIN_MENU', 'menu');
-						self.mainManuState = self.mainManuStateObj.preferences;
-					}
-					return;
+				});
 			}
-		}
+		});
 	},
 
 //----------------------------------------------------------------------//
@@ -597,29 +419,20 @@
 		gestures_list.forEach(function (item) {
 			switch (item["name"]){
 				case "flat_right":
-
 					self.flatRightDetected = true;
 					MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
 						if (module.hidden && self.check_for_validity(self.mainMenuShowLastTime, 0.2, 1.4)){
 							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 							self.sendNotification('GESTURE_INTERACTION', 'menu_show') //send this notification when user desires to open the main menu via gesture
-						}else if(!module.hidden){
-							self.lastTimeFlatRight = new Date();
-							self.lastXOfFlatRight = item["center"][0]
-							self.lastYOfFlatRight = item["center"][1]
-							//console.log("[" + self.name + "] center X = " + self.lastXOfFlatRight + "  center Y = " + self.lastYOfFlatRight);
-							self.MainMenuSelected = module.getSelectionIndexForPosition(self.lastXOfFlatRight, self.lastYOfFlatRight);
-							
-							if (self.config.MainMenuDistanceEnabled) {
-								self.MainMenuDistance = item["distance"];
-								//console.debug("Received distance: " + item["distance"]);
-							}
+						} else if(!module.hidden) {
+							var cursorPosX = item["center"][0];
+							var cursorPosY = item["center"][1];
+							var cursorDistance = item["distance"];
+							module.updateCursor(cursorPosX, cursorPosY, cursorDistance);
 						}
 					});
-
 					break;
 				case "thumbs_up_right":
-				
 					if (((self.facerecognitionshown === false) || (self.objectdetectionshown === false) || (self.gesturerecognitionshown === false )) 
 					&& self.check_for_validity(self.showAllLastTime, 0.5, 2.5)) {			
 						console.log("[" + self.name + "] show all..." );
@@ -637,7 +450,6 @@
 				case "thumbs_down_left":
 					break;
 				case "thumbs_down_right":
-
 					if (self.check_for_validity(self.hideAllLastTime, 0.5, 2.5))
 					if(self.facerecognitionshown || self.objectdetectionshown || self.gesturerecognitionshown || self.personrecognitionshown || self.aiartmirrorshown ){
 							self.remove_everything_center_display();
@@ -645,16 +457,12 @@
 					}
 					break;
 				case "okay_left":
-
 					break;
 				case "okay_right":
-										
 					break;
 				case "one_left":
-
 					break;
 				case "one_right":
-					
 					break;
 			}
 		});
@@ -665,41 +473,10 @@
 				if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 1, 1.5)){
 					module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
 					self.sendNotification('GESTURE_INTERACTION', 'menu_hide') //send this notification when user desires to close the main menu via gesture
-
-					self.MainMenuSelected = -1;
-					self.MainMenuSelectedLast = -1;
-					self.MainMenuSelectedTime = 0;
-					self.sendNotification('MAIN_MENU', 'menu');
-					self.mainManuState = self.mainManuStateObj.main;
-					
-					if (self.config.MainMenuDistanceEnabled) {
-						self.MainMenuDistance = -1;
-						self.MainMenuDistanceHoverStart = -1;
-					}
 				}
 			});
 			
 		}
-
-		if (self.MainMenuSelected != self.MainMenuSelectedLast){
-			if (self.config.MainMenuDistanceEnabled) {
-				self.MainMenuDistanceHoverStart = self.MainMenuDistance;
-				console.log("[" + self.name + "] menu hover over item  " + self.MainMenuSelected );
-				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
-			} else {
-				console.log("[" + self.name + "] menu select item  " + self.MainMenuSelected );
-				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
-				setTimeout(() => {self.check_for_menu_click(d.getTime(),self.MainMenuSelected);}, 2500);
-				self.MainMenuSelectedTime  = d.getTime();
-			}
-		}
-
-		if (self.config.MainMenuDistanceEnabled) {
-			self.check_for_menu_distance_click(self.MainMenuSelected);
-		}
-		
-		self.MainMenuSelectedLast = self.MainMenuSelected;
-
 		if ((gestures_list.filter(function(left_two) { return left_two.name === 'two_left'; }).length > 0) &&
 		   (gestures_list.filter(function(right_two) { return right_two.name === 'two_right'; }).length > 0) && 
 		   (self.aiartmirrorshown == true || self.cameraimageshown == true) && self.check_for_validity(self.printLastTime, 1, 1.5)) {
@@ -707,42 +484,6 @@
 			
 		}
 	},
-
-//----------------------------------------------------------------------//
-// CHECK IF GESTURE TRIGGERD MENU
-// a given time afer a menu point is clicked the validity needs 
-// to be checked again
-//----------------------------------------------------------------------//
-	check_for_menu_click:function(select_time, item){
-		var self = this;
-		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1) && ( select_time == self.MainMenuSelectedTime)){
-			console.log("[" + self.name + "] menu click" );
-			self.sendNotification('MAIN_MENU_CLICK_SELECTED');
-			self.MainMenuSelected = -1;
-			self.MainMenuSelectedLast = -1;
-			self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
-		}
-		console.log("[" + self.name + "] item changed.." );
-	},
-
-	check_for_menu_distance_click: function(item) {
-		if ((item == self.MainMenuSelectedLast) && ( self.MainMenuSelected != -1)) {
-			if (self.MainMenuDistance != self.MainMenuDistanceHoverStart) {
-				console.debug("Distance left: " + (self.config.MainMenuDistanceButtonPush - (self.MainMenuDistanceHoverStart - self.MainMenuDistance)) / 10 + " cm");
-			}
-			if (self.MainMenuDistance <= self.MainMenuDistanceHoverStart - self.config.MainMenuDistanceButtonPush){
-				// 
-				console.log("[" + self.name + "] menu distance click" );
-				self.sendNotification('MAIN_MENU_CLICK_SELECTED');
-				self.MainMenuSelected = -1;
-				self.MainMenuSelectedLast = -1;
-				self.sendNotification('MAIN_MENU_SELECT', self.MainMenuSelected);
-			}
-			if (self.MainMenuDistance > self.MainMenuDistanceHoverStart) {
-				self.MainMenuDistanceHoverStart = self.MainMenuDistance;
-			}
-		}
-},
 
 //----------------------------------------------------------------------//
 // this function checks if a certain gesture has been performed over a period of time. timeMemory has to be property of SmartMirror-Decision-Maker class
@@ -796,40 +537,38 @@
 //----------------------------------------------------------------------//
 	getDom() {
 		var self = this;
-
 		self.data.header = 'Debug Informations'
 
 		var myTableDiv = document.createElement("DebugTable");
 		myTableDiv.className = "DebugTablexsmall";
 		
-
-  		var table = document.createElement('TABLE');
-  		//table.border = '1';
+  	var table = document.createElement('TABLE');
+  	//table.border = '1';
 		table.className = "DebugTablexsmall";
 
-  		var tableBody = document.createElement('TBODY');
-  		table.appendChild(tableBody);
+		var tableBody = document.createElement('TBODY');
+		table.appendChild(tableBody);
 		
 		for (var key in self.Debug_infos) {
 			var tr = document.createElement('TR');
 			tr.className = "DebugTablexsmall";
 			tableBody.appendChild(tr);		
 			var td = document.createElement('TD');
-      		td.appendChild(document.createTextNode(key));
+			td.appendChild(document.createTextNode(key));
 			td.className = "DebugTablexsmall";
 			//td.width = '70px';
-      		tr.appendChild(td);
+			tr.appendChild(td);
 			var td = document.createElement('TD');
-      		//td.width = '50';
-      		td.appendChild(document.createTextNode(self.Debug_infos[key]));
+			//td.width = '50';
+			td.appendChild(document.createTextNode(self.Debug_infos[key]));
 			td.width = '70px';
-      		tr.appendChild(td);
+			tr.appendChild(td);
 		} 
 
-  		myTableDiv.appendChild(table);
-
+		myTableDiv.appendChild(table);
 		return myTableDiv;
 	},
+
 	getStyles: function(){
 		return ["SmartMirror-Decision-Maker.css"];
 	}
