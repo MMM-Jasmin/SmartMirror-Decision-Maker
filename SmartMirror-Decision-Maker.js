@@ -10,82 +10,20 @@
 
  Module.register("SmartMirror-Decision-Maker", {
 
-	mainManuStateObj: {
-		main: 0,
-		camera:1,
-		application:4,
-		smarthome:5,
-		coffee:6,
-		preferences:7,
-		user_settings:8,
-		utilities:9,
-		campus:10,
-		entertainment:11
-	},
-
 	numberOfRecognisedPersons: 0,
 	currentuserid: -1,
 	currentpersonTrackID : -1,
 
-	facerecognitionshown: false,
-	objectdetectionshown: false,
-	gesturerecognitionshown: false,
-	personrecognitionshown: false,
-	cameraimageshown: false,
-	shortdistanceshown: false,
-
 	flatRightDetected : false,
-	lastTimeFlatRight: null,
-	lastXOfFlatRight : 0,
-	lastYOfFlatRight : 0,
 
 	timeOFLastGreet: 0,
 	timebetweenGreets: 50000,
 
-	timeOfLastCoffee: 0,
-	timeOFLastPicture: 0,
-	selfieOngoing: false,
-
-	newsNextLastTime: {timestamp: undefined},
-	newsDetailLastTime: {timestamp: undefined},
 	mainMenuShowLastTime: {timestamp: undefined},
 	mainMenuHideLastTime: {timestamp: undefined},
-	showAllLastTime: {timestamp: undefined},
-	hideAllLastTime : {timestamp: undefined},
-	userLoginChangeLastTime: {timestamp: undefined},
-	printLastTime: {timestamp: undefined},
-	newsScrollUpLastTime: {timestamp: undefined},
-	newsScrollDownLastTime: {timestamp: undefined},
-	gamesNextLastTime: {timestamp: undefined},
 
 	Debug_infos: {},
 
-	readingMode : false,
-	applicationsViewStates: [],
-	applicationClass: [
-		"clock",
-		"calendar", 
-		// "smartmirror-speechrecognition",
-		"MMM-cryptocurrency",
-		"weatherforecast",
-		"currentweather", 
-		"newsfeed",
-		"MMM-SimpleLogo", 
-		"MMM-PublicTransportHafas", 
-		"MMM-TomTomTraffic", 
-		"smartmirror-mensa-plan", 
-		"smartmirror-bivital", 
-		"MMM-SoccerLiveScore",
-		"MMM-News",
-		"MMM-Canteen",
-		"MMM-Liquipedia-Dota2",
-		"MMM-DailyDilbert",
-		"MMM-Fuel",
-		"MMM-ITCH-IO",
-		"weatherforecast",
-		"weather",
-		"SmartMirror-Main-Menu-Tiles"
-	],
 
 //----------------------------------------------------------------------//
 // CONFIG DEFAULTS
@@ -212,28 +150,26 @@
 
 		//no control if a selfie is made!
 		//just return and ignor all changes
-		if (self.selfieOngoing == false){
-			// all control messages
-			switch (notification) {
-				case 'MENU_SELECTED':
-					console.info("[" + self.name + "] " + "Menu item was selected: " + payload);
-					self.process_menu_selection(payload)
-					break;
-				case 'RECOGNIZED_PERSONS':
-					self.process_rec_person(payload.RECOGNIZED_PERSONS);
-					break;
-				case 'ALL_MODULES_STARTED':
-					self.sendSocketNotification('LOGGIN_USER', -1);
-					self.sendNotification('smartmirror-TTS-en',"Welcome to the smart mirror!");
-					break;
-				case 'DOM_OBJECTS_CREATED':
-					MM.getModules().enumerate(function(module) {
-						if (module.name != "MMM-TomTomTraffic") {
-							module.hide(0, function() { Log.log('Module is hidden.');}, {lockString: "lockString"});
-						}
-					});
+		// all control messages
+		switch (notification) {
+			case 'MENU_SELECTED':
+				console.info("[" + self.name + "] " + "Menu item was selected: " + payload);
+				self.process_menu_selection(payload)
 				break;
-			}
+			case 'RECOGNIZED_PERSONS':
+				self.process_rec_person(payload.RECOGNIZED_PERSONS);
+				break;
+			case 'ALL_MODULES_STARTED':
+				self.sendSocketNotification('LOGGIN_USER', -1);
+				self.sendNotification('smartmirror-TTS-en',"Welcome to the smart mirror!");
+				break;
+			case 'DOM_OBJECTS_CREATED':
+				MM.getModules().enumerate(function(module) {
+					if (module.name != "MMM-TomTomTraffic") {
+						module.hide(0, function() { Log.log('Module is hidden.');}, {lockString: "lockString"});
+					}
+				});
+			break;
 		}		
 		return;
 	},
@@ -263,7 +199,7 @@
 				//menu closed..
 				// self.sendNotification('MAIN_MENU', 'menu');
 				//center display closed..
-				self.remove_everything_center_display();
+				self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
 			}
 		} else if (notification === 'GREET_USER_RESULT'){
 			if (payload[0] == "de")
@@ -280,11 +216,6 @@
 //----------------------------------------------------------------------//
 	adjustViewLogin: function(user_config){
 		var self = this;
-
-		if((self.aiartmirrorshown == true)){
-			self.sendNotification('CENTER_DISPLAY', 'STYLE_TRANSFERE');
-			self.aiartmirrorshown = false;
-		}
 
 		self.sendNotification('USER_MODULE_VISIBILITY_CONFIG', user_config)
 
@@ -418,12 +349,11 @@
 
 		gestures_list.forEach(function (item) {
 			switch (item["name"]){
-				case "flat_right":
+				case "right_flat":
 					self.flatRightDetected = true;
 					MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
 						if (module.hidden && self.check_for_validity(self.mainMenuShowLastTime, 0.2, 1.4)){
 							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-							self.sendNotification('GESTURE_INTERACTION', 'menu_show') //send this notification when user desires to open the main menu via gesture
 						} else if(!module.hidden) {
 							var cursorPosX = item["center"][0];
 							var cursorPosY = item["center"][1];
@@ -432,37 +362,23 @@
 						}
 					});
 					break;
-				case "thumbs_up_right":
-					if (((self.facerecognitionshown === false) || (self.objectdetectionshown === false) || (self.gesturerecognitionshown === false )) 
-					&& self.check_for_validity(self.showAllLastTime, 0.5, 2.5)) {			
-						console.log("[" + self.name + "] show all..." );
-						self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
-						self.sendNotification('GESTURE_INTERACTION', 'SHOWALL'); //send this notification when user desires to toggle all camera options
-						self.facerecognitionshown = true;
-						self.objectdetectionshown = true;
-						self.gesturerecognitionshown = true;
-						self.cameraimageshown = true;
-						self.personrecognitionshown = true;
-					}
+				case "right_tumbs_up":
+					self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
 					break;
-				case "thumbs_up_left":
+				case "left_tumbs_up":
 					break;
-				case "thumbs_down_left":
+				case "left_tumbs_down":
 					break;
-				case "thumbs_down_right":
-					if (self.check_for_validity(self.hideAllLastTime, 0.5, 2.5))
-					if(self.facerecognitionshown || self.objectdetectionshown || self.gesturerecognitionshown || self.personrecognitionshown || self.aiartmirrorshown ){
-							self.remove_everything_center_display();
-							self.sendNotification('GESTURE_INTERACTION', 'HIDEALL'); //send this notification when user desires to hide all camera options
-					}
+				case "right_tumbs_down":
+					self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
 					break;
-				case "okay_left":
+				case "left_okay":
 					break;
-				case "okay_right":
+				case "right_okay":
 					break;
-				case "one_left":
+				case "left_one":
 					break;
-				case "one_right":
+				case "right_one":
 					break;
 			}
 		});
@@ -472,15 +388,8 @@
 			MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
 				if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 1, 1.5)){
 					module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
-					self.sendNotification('GESTURE_INTERACTION', 'menu_hide') //send this notification when user desires to close the main menu via gesture
 				}
 			});
-			
-		}
-		if ((gestures_list.filter(function(left_two) { return left_two.name === 'two_left'; }).length > 0) &&
-		   (gestures_list.filter(function(right_two) { return right_two.name === 'two_right'; }).length > 0) && 
-		   (self.aiartmirrorshown == true || self.cameraimageshown == true) && self.check_for_validity(self.printLastTime, 1, 1.5)) {
-			
 			
 		}
 	},
@@ -503,32 +412,6 @@
 			}
 		}
 		return false
-	},
-
-//----------------------------------------------------------------------//
-// REMOVES EVERYTHING FROM CENTER DISPLAY
-// is triggered by thumbs down for example
-//----------------------------------------------------------------------//
-	remove_everything_center_display: function(){
-		self = this;
-		self.sendNotification('CENTER_DISPLAY', 'HIDEALL');
-		self.facerecognitionshown = false;
-		self.objectdetectionshown = false;
-		self.gesturerecognitionshown = false;
-		self.personrecognitionshown = false;
-		self.cameraimageshown = false;
-	},
-
-//----------------------------------------------------------------------//
-// CHECK IF NOBODY IS LOOGED IN
-//----------------------------------------------------------------------//
-	check_for_user_idle: function(){
-		self = this;
-		if(self.numberOfRecognisedPersons == 0){
-			if(self.currentuserid != -1){
-				self.sendSocketNotification('LOGGIN_USER', -1);
-			}
-		}
 	},
 
 //----------------------------------------------------------------------//
