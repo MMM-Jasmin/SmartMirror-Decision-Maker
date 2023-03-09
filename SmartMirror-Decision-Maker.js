@@ -41,14 +41,12 @@
 			{ name: "MMM-SimpleLogo", words: ["legato-logo"] },
 			{ name: "MMM-PublicTransportHafas", words: ["transportation"] },
 			{ name: "MMM-TomTomTraffic", words: ["traffic"] },
-			{ name: "smartmirror-mensa-plan", words: ["mensa"] },
-			{ name: "smartmirror-main-menu", words: ["menu"] },
-			{ name: "SmartMirror-Main-Menu-Center", words: ["menu-center"] },
+			{ name: "smartmirror-main-menu-tiles", words: ["menu-center"] },
 			{ name: "smartmirror-center-display", words: ["centerdisplay"] },
 			{ name: "smartmirror-bivital", words: ["bivital"] },
 			{ name: "MMM-SoccerLiveScore", words: ["soccer"] },
 			{ name: "MMM-News", words: ["news"] },
-			{ name: "MMM-Canteen", words: ["canteen"] },
+			{ name: "MMM-Canteen", words: ["mensa"] },
 			{ name: "MMM-Fuel", words: ["fuel", "gas"] },
 			{ name: "MMM-DailyDilbert", words: ["comic"] },
 			{ name: "MMM-Liquipedia-Dota2", words: ["esports", "dota2"] },
@@ -200,6 +198,8 @@
 				// self.sendNotification('MAIN_MENU', 'menu');
 				//center display closed..
 				self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
+				self.sendNotification('MAIN_MENU' , 'reset');
+				self.sendNotification('/websocket/sel', 'full');
 			}
 		} else if (notification === 'GREET_USER_RESULT'){
 			if (payload[0] == "de")
@@ -257,7 +257,6 @@
 					self.sendSocketNotification('LOGGIN_USER', -1);
 				}
 			}
-			
 		}
 
 		var idToLoginNow = -1;
@@ -301,8 +300,8 @@
 			self.currentpersonTrackID = -1; //persons["TrackID"];
 			//self.Debug_infos['currentpersonTrackID'] = -1;
 			//self.updateDom();
+			self.process_gestures_object([]);
 		}
-
 
 		if (idToLoginNow != self.currentuserid){
 			self.sendSocketNotification('LOGGIN_USER', idToLoginNow);
@@ -366,8 +365,10 @@
 					self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
 					break;
 				case "left_tumbs_up":
+					self.sendNotification("/websocket/sel", "depth_limited");
 					break;
 				case "left_tumbs_down":
+					self.sendNotification("/websocket/sel", "full");
 					break;
 				case "right_tumbs_down":
 					self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
