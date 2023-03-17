@@ -364,14 +364,14 @@
 				case "right_tumbs_up":
 					self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
 					break;
+				case "right_tumbs_down":
+					self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
+					break;
 				case "left_tumbs_up":
 					self.sendNotification("/websocket/sel", "depth_limited");
 					break;
 				case "left_tumbs_down":
 					self.sendNotification("/websocket/sel", "full");
-					break;
-				case "right_tumbs_down":
-					self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
 					break;
 				case "left_okay":
 					break;
