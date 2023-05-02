@@ -19,8 +19,12 @@
 	timeOFLastGreet: 0,
 	timebetweenGreets: 50000,
 
+	UserLoginView: undefined,
+
 	mainMenuShowLastTime: {timestamp: undefined},
 	mainMenuHideLastTime: {timestamp: undefined},
+	mainHideAllModulesLastTime: {timestamp: undefined},
+	mainAdjModulesLastTime: {timestamp: undefined},
 
 	Debug_infos: {},
 
@@ -29,37 +33,36 @@
 // CONFIG DEFAULTS
 //----------------------------------------------------------------------//
 	defaults: {
-		module_list: [
-			{ name: "clock", words: ["clock", "uhr"] },
-			{ name: "calendar", words: ["calendar"] },
-			{ name: "smartmirror-speechrecognition", words: ["speech"] },
-			{ name: "MMM-cryptocurrency", words: ["crypto"] },
-			{ name: "weatherforecast", words: ["wforecast"] },
-			{ name: "currentweather", words: ["weather", "wetter"] },
-			{ name: "weather", words: ["weather", "wetter"] },
-			{ name: "newsfeed", words: ["news feed", "newsfeed"] },
-			{ name: "MMM-SimpleLogo", words: ["legato-logo"] },
-			{ name: "MMM-PublicTransportHafas", words: ["transportation"] },
-			{ name: "MMM-TomTomTraffic", words: ["traffic"] },
-			{ name: "smartmirror-main-menu-tiles", words: ["menu-center"] },
-			{ name: "smartmirror-center-display", words: ["centerdisplay"] },
-			{ name: "smartmirror-bivital", words: ["bivital"] },
-			{ name: "MMM-SoccerLiveScore", words: ["soccer"] },
-			{ name: "MMM-News", words: ["news"] },
-			{ name: "MMM-Canteen", words: ["mensa"] },
-			{ name: "MMM-Fuel", words: ["fuel", "gas"] },
-                        { name: "MMM-XKCD", words: ["comic"] },
-			{ name: "MMM-Comics", words: ["comic"] },
-			{ name: "MMM-Liquipedia-Dota2", words: ["esports", "dota2"] },
-			{ name: "MMM-ITCH-IO", words: ["games"] },
-			{ name: "smartmirror-coffeebot", words: ["coffee", "coffeebot"] },
-			{ name: "SmartMirror-Decision-Maker", words: ["Decision_maker"] },
-			{ name: "SmartMirror-Image-Handler", words: ["image_handler"] },
-			{ name: "SmartMirror-Webserver-ImageView", words: ["image_handler"] },
-			{ name: "SmartMirror-Label-Display", words: ["image_handler"] },
-		],
-	},
+		module_dict: {
+			"clock": ["clock", "uhr"],
+			"calendar": ["calendar"],
+			"smartmirror-speechrecognition": ["speech"],
+			"MMM-cryptocurrency": ["crypto"],
+			"weatherforecast": ["wforecast"],
+			"currentweather": ["weather", "wetter"],
+			"weather": ["weather", "wetter"],
+			"newsfeed": ["newsfeed", "news feed"],
+			"MMM-SimpleLogo": ["logo", "legato-logo"],
+			"MMM-PublicTransportHafas": ["transportation"],
+			"MMM-TomTomTraffic": ["traffic"],
+			"smartmirror-bivital": ["bivital"],
+			"MMM-SoccerLiveScore": ["soccer"],
+			"MMM-News": ["news"],
+			"MMM-Canteen": ["mensa"],
+			"MMM-Fuel": ["fuel", "gas"],
+			"MMM-XKCD": ["comic"],
+			"MMM-Comics": ["comic"],
+			"MMM-Liquipedia-Dota2": ["dota2", "esports"],
+			"MMM-ITCH-IO": ["games"],
+			"smartmirror-coffeebot": ["coffee", "coffeebot"],
+			"SmartMirror-Decision-Maker": ["Decision_maker"],
+		},
 
+		allways_visible_modules: [
+			"SmartMirror-Webserver-ImageView",
+			"SmartMirror-Label-Display"
+		]
+	},
 //----------------------------------------------------------------------//
 // START FUNKTION
 //----------------------------------------------------------------------//
@@ -164,7 +167,7 @@
 				break;
 			case 'DOM_OBJECTS_CREATED':
 				MM.getModules().enumerate(function(module) {
-					if (module.name != "MMM-TomTomTraffic") {
+					if (module.name != "MMM-TomTomTraffic" && !self.config.allways_visible_modules.includes(module.name)) {
 						module.hide(0, function() { Log.log('Module is hidden.');}, {lockString: "lockString"});
 					}
 				});
@@ -181,8 +184,10 @@
 		if(notification === 'LOGGIN_USER_INFOS') {
 			//console.log("[" + self.name + "] " + "User data received: " + JSON.stringify(JSON.parse(payload)[0]["language"]));	
 			//console.log("test " + JSON.parse(payload)[0])
+
+			self.UserLoginView = (JSON.parse(payload))[0]
 			
-			self.adjustViewLogin((JSON.parse(payload))[0]);
+			self.adjustViewLogin(self.UserLoginView);
 			self.Debug_infos['user logged in'] = JSON.parse(payload)[0]["name"];
 			self.updateDom();			
 
@@ -220,15 +225,15 @@
 
 		self.sendNotification('USER_MODULE_VISIBILITY_CONFIG', user_config)
 
-		self.config.module_list.forEach(function(element) {
+
+		for (const [name, value] of Object.entries(self.config.module_dict)){
 			for(var key in user_config){
-				if(element.words.includes(key)){
-					MM.getModules().withClass(element.name).enumerate(function(module) {
+				if(value.includes(key)){
+					MM.getModules().withClass(name).enumerate(function(module) {
 					if(user_config[key]) {
 						if (module.hidden){
 							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 						}
-							
 					}else{
 						 if (!module.hidden){
 							module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"})
@@ -237,7 +242,7 @@
 					});
 				}
 			}
-		});
+		}
 	},
 
 //----------------------------------------------------------------------//
@@ -318,23 +323,35 @@
 	process_menu_selection: function(selection) {
 		var self = this;
 
-		self.config.module_list.forEach(function(element) {
-			var wordIncluded = false;					
-			element.words.forEach(function(word){
-				if (selection.includes(word)) {
-					wordIncluded = true
+		if (selection == "saveView") {
+			var tmp = {id: self.currentuserid};
+
+			MM.getModules().enumerate(function(module) {
+				var tmp_mname = module.name
+				var tmp_keys = self.config.module_dict[tmp_mname]
+
+				if(tmp_keys && tmp_keys.length !== 0){
+					tmp[tmp_keys[0]] = !module.hidden
+					self.UserLoginView = !module.hidden
 				}
 			});
-			if (wordIncluded) {
-				MM.getModules().withClass(element.name).enumerate(function(module) {
-					if (module.hidden) {
-						module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
-					} else {
-						module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
+			
+			self.sendNotification("SHOW_ALERT", {type: "notification", message: "saving current view as loggin view"});
+					
+			self.sendSocketNotification('save_user_view', tmp);
+
+		} else {
+			for (const [key, value] of Object.entries(self.config.module_dict)){		
+				value.forEach(function(word) {
+					if (selection.includes(word)){
+						MM.getModules().withClass(key).enumerate(function(module) {
+							if (module.hidden) module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
+							else module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
+						});
 					}
 				});
 			}
-		});
+		}
 	},
 
 //----------------------------------------------------------------------//
@@ -351,7 +368,7 @@
 			switch (item["name"]){
 				case "right_flat":
 					self.flatRightDetected = true;
-					MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
+					MM.getModules().withClass("SmartMirror-Main-Menu-Tiles").enumerate(function(module) {
 						if (module.hidden && self.check_for_validity(self.mainMenuShowLastTime, 0.2, 1.4)){
 							module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
 						} else if(!module.hidden) {
@@ -374,9 +391,13 @@
 				case "left_tumbs_down":
 					self.sendNotification("/websocket/sel", "full");
 					break;
-				case "left_okay":
+				case "left_fist":
+					if(self.check_for_validity(self.mainAdjModulesLastTime, 1, 1.5))
+						self.adjustViewLogin(self.UserLoginView);
 					break;
-				case "right_okay":
+				case "right_fist":
+					if(self.check_for_validity(self.mainHideAllModulesLastTime, 1, 1.5))
+						self.hide_all_modules();
 					break;
 				case "left_one":
 					break;
@@ -386,14 +407,22 @@
 		});
 
 		if((self.flatRightDetected == false)){ //&& (self.MainMenuSelectedLast != -1)
-			
-			MM.getModules().withClass("smartmirror-main-menu-tiles").enumerate(function(module) {
-				if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 1, 1.5)){
+			MM.getModules().withClass("SmartMirror-Main-Menu-Tiles").enumerate(function(module) {
+				if(!module.hidden && self.check_for_validity(self.mainMenuHideLastTime, 2, 2.5)){
 					module.hide(1000, function() {Log.log(module.name + ' is hidden.');}, {lockString: "lockString"});
 				}
 			});
 			
 		}
+	},
+
+	hide_all_modules: function() {
+		var self = this;
+		MM.getModules().enumerate(function(module) {
+			if (!self.config.allways_visible_modules.includes(module.name)) {
+				module.hide(0, function() { Log.log('Module is hidden.');}, {lockString: "lockString"});
+			}
+		});
 	},
 
 //----------------------------------------------------------------------//

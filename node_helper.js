@@ -32,7 +32,23 @@ module.exports = NodeHelper.create({
 		if(notification === 'CONFIG') {
 			this.config = payload
       		this.setup(); 
-    	}else if(notification === 'LOGGIN_USER') {
+    	}else if (notification === 'save_user_view') {
+			console.log(payload)
+
+			var tmp_id = payload["id"]
+			//console.log(tmp_id)
+
+			for (const [key, value] of Object.entries(payload)) {
+				if(key === "id")
+					continue;
+				this.con.query("UPDATE mydb.login_view SET " + key + " = " + value + " where user_ID = " + tmp_id, function (err, result, fields) {
+					if (err) throw err;
+					//self.sendSocketNotification('LOGGIN_USER_INFOS',JSON.stringify(result));
+					//console.log(JSON.stringify(result));
+				});
+			}
+			
+		}else if(notification === 'LOGGIN_USER') {
 			this.con.query("select * from mydb.user, mydb.login_view where ID = " + payload + " AND ID = user_ID", function (err, result, fields) {
 				if (err) throw err;
 				self.sendSocketNotification('LOGGIN_USER_INFOS',JSON.stringify(result));
@@ -52,5 +68,4 @@ module.exports = NodeHelper.create({
 			});
 		}
   	}
-
 });
