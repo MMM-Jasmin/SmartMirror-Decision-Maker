@@ -41,6 +41,7 @@
 			"weatherforecast": ["wforecast"],
 			"currentweather": ["weather", "wetter"],
 			"weather": ["weather", "wetter"],
+			"MMM-RAIN-MAP" : ["rain_map"],
 			"newsfeed": ["newsfeed", "news feed"],
 			"MMM-SimpleLogo": ["logo", "legato-logo"],
 			"MMM-PublicTransportHafas": ["transportation"],
@@ -56,6 +57,7 @@
 			"MMM-ITCH-IO": ["games"],
 			"smartmirror-coffeebot": ["coffee", "coffeebot"],
 			"SmartMirror-Decision-Maker": ["Decision_maker"],
+			"MMM-iFrame": ["office_temp"],
 		},
 
 		allways_visible_modules: [
@@ -332,7 +334,7 @@
 
 				if(tmp_keys && tmp_keys.length !== 0){
 					tmp[tmp_keys[0]] = !module.hidden
-					self.UserLoginView = !module.hidden
+					self.UserLoginView[tmp_keys[0]] = !module.hidden
 				}
 			});
 			
@@ -392,11 +394,11 @@
 					self.sendNotification("/websocket/sel", "full");
 					break;
 				case "left_fist":
-					if(self.check_for_validity(self.mainAdjModulesLastTime, 1, 1.5))
+					if(self.check_for_validity(self.mainAdjModulesLastTime, 2, 3))
 						self.adjustViewLogin(self.UserLoginView);
 					break;
 				case "right_fist":
-					if(self.check_for_validity(self.mainHideAllModulesLastTime, 1, 1.5))
+					if(self.check_for_validity(self.mainHideAllModulesLastTime, 2, 3))
 						self.hide_all_modules();
 					break;
 				case "left_one":
