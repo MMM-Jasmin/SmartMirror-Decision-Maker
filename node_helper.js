@@ -33,7 +33,7 @@ module.exports = NodeHelper.create({
 			this.config = payload
       		this.setup(); 
     	}else if (notification === 'save_user_view') {
-			console.log(payload)
+			//console.log(payload)
 
 			var tmp_id = payload["id"]
 			//console.log(tmp_id)
@@ -52,7 +52,7 @@ module.exports = NodeHelper.create({
 			this.con.query("select * from mydb.user, mydb.login_view where ID = " + payload + " AND ID = user_ID", function (err, result, fields) {
 				if (err) throw err;
 				self.sendSocketNotification('LOGGIN_USER_INFOS',JSON.stringify(result));
-				console.log(JSON.stringify(result));
+				//console.log(JSON.stringify(result));
 			});
     	}else if(notification === 'GREET_USER') {
 			this.con.query("select " + payload[0] + " from mydb.greetings", function (err, result, fields) {

@@ -25,7 +25,7 @@
 	mainMenuHideLastTime: {timestamp: undefined},
 	mainHideAllModulesLastTime: {timestamp: undefined},
 	mainAdjModulesLastTime: {timestamp: undefined},
-
+	EmoLastTime: {timestamp: undefined},
 	Debug_infos: {},
 
 
@@ -50,6 +50,7 @@
 			"MMM-SoccerLiveScore": ["soccer"],
 			"MMM-News": ["news"],
 			"MMM-Canteen": ["mensa"],
+			"SmartMirror-Mensa-Plan": ["mensa"],
 			"MMM-Fuel": ["fuel", "gas"],
 			"MMM-XKCD": ["comic"],
 			"MMM-Comics": ["comic"],
@@ -135,7 +136,7 @@
 					break;	
 			case 'TEGRASTATS' :
 				self.Debug_infos["Jetson power consumption [Watt]"] = parseFloat(payload["WATT"]).toFixed(2).toString() ;
-				self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(9.5,10.5,2).toFixed(2).toString();
+				//self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(9.5,10.5,2).toFixed(2).toString();
 				break;
 			default:
 				total_power = 0.0
@@ -145,9 +146,9 @@
 				if (typeof self.Debug_infos["Jetson power consumption [Watt]"] !== 'undefined') {
 					total_power += parseFloat(self.Debug_infos["Jetson power consumption [Watt]"]);
 				}
-				if (typeof self.Debug_infos["other power consumption [Watt]"] !== 'undefined') {
-					total_power += parseFloat(self.Debug_infos["other power consumption [Watt]"]);
-				}
+				//if (typeof self.Debug_infos["other power consumption [Watt]"] !== 'undefined') {
+				//	total_power += parseFloat(self.Debug_infos["other power consumption [Watt]"]);
+				//}
 				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2).toString();
 				self.updateDom();
 		}
@@ -382,7 +383,7 @@
 					});
 					break;
 				case "right_tumbs_up":
-					self.sendNotification('CENTER_DISPLAY', 'SHOWALL');
+					self.sendNotification('LABEL_DISPLAY', 'SHOWALL');
 					break;
 				case "right_tumbs_down":
 					self.sendNotification('LABEL_DISPLAY', 'HIDEALL');
@@ -392,6 +393,10 @@
 					break;
 				case "left_tumbs_down":
 					self.sendNotification("/websocket/sel", "full");
+					break;
+				case "left_one":
+					if(self.check_for_validity(self.EmoLastTime, 1, 5))
+						self.sendNotification('LABEL_DISPLAY', 'EMO');
 					break;
 				case "left_fist":
 					if(self.check_for_validity(self.mainAdjModulesLastTime, 2, 3))
@@ -458,8 +463,8 @@
 		var myTableDiv = document.createElement("DebugTable");
 		myTableDiv.className = "DebugTablexsmall";
 		
-  	var table = document.createElement('TABLE');
-  	//table.border = '1';
+  		var table = document.createElement('TABLE');
+  		//table.border = '1';
 		table.className = "DebugTablexsmall";
 
 		var tableBody = document.createElement('TBODY');
@@ -467,11 +472,11 @@
 		
 		for (var key in self.Debug_infos) {
 			var tr = document.createElement('TR');
-			tr.className = "DebugTablexsmall";
+			//tr.className = "DebugTablexsmall";
 			tableBody.appendChild(tr);		
 			var td = document.createElement('TD');
 			td.appendChild(document.createTextNode(key));
-			td.className = "DebugTablexsmall";
+			//td.className = "DebugTablexsmall";
 			//td.width = '70px';
 			tr.appendChild(td);
 			var td = document.createElement('TD');

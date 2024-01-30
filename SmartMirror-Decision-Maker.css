@@ -8,5 +8,6 @@
 	font-size: 17px;
   	line-height: 17px;
 	text-align: right;
-	color: #eee;
+	/*color: #eee;*/
+	color: var(--color-text);
 }
