@@ -36,7 +36,7 @@
 		module_dict: {
 			"clock": ["clock", "uhr"],
 			"calendar": ["calendar"],
-			"smartmirror-speechrecognition": ["speech"],
+			"SmartMirror-nlu-display": ["speech"],
 			"MMM-cryptocurrency": ["crypto"],
 			"weatherforecast": ["wforecast"],
 			"currentweather": ["weather", "wetter"],
@@ -133,15 +133,23 @@
 				break;
 			case '/object_det/hailo8/avg_power':
 					self.Debug_infos['hailo8 power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
-					break;	
+					self.Debug_infos['veral power consumption [Watt]'] = 0.0;
+					break;
+			case '/object_det/versal/avg_power':
+					self.Debug_infos['veral power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
+					self.Debug_infos['hailo8 power consumption [Watt]'] = 0.0;
+					break;
 			case 'TEGRASTATS' :
 				self.Debug_infos["Jetson power consumption [Watt]"] = parseFloat(payload["WATT"]).toFixed(2).toString() ;
 				//self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(9.5,10.5,2).toFixed(2).toString();
 				break;
 			default:
-				total_power = 0.0
+				total_power = 0.0;
 				if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
 					total_power += parseFloat(self.Debug_infos['hailo8 power consumption [Watt]']);
+				}
+				if (typeof self.Debug_infos['veral power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['veral power consumption [Watt]']);
 				}
 				if (typeof self.Debug_infos["Jetson power consumption [Watt]"] !== 'undefined') {
 					total_power += parseFloat(self.Debug_infos["Jetson power consumption [Watt]"]);
