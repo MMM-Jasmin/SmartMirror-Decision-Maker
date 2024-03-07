@@ -133,11 +133,15 @@
 				break;
 			case '/object_det/hailo8/avg_power':
 					self.Debug_infos['hailo8 power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
-					self.Debug_infos['veral power consumption [Watt]'] = 0.0;
+					if (typeof self.Debug_infos['veral power consumption [Watt]'] !== 'undefined') {
+						self.Debug_infos['veral power consumption [Watt]'] = 0.0;
+					}
 					break;
 			case '/object_det/versal/avg_power':
 					self.Debug_infos['veral power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
-					self.Debug_infos['hailo8 power consumption [Watt]'] = 0.0;
+					if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
+						self.Debug_infos['hailo8 power consumption [Watt]'] = 0.0;
+					}
 					break;
 			case 'TEGRASTATS' :
 				self.Debug_infos["Jetson power consumption [Watt]"] = parseFloat(payload["WATT"]).toFixed(2).toString() ;
