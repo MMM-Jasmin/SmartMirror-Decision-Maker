@@ -186,8 +186,15 @@
 						module.hide(0, function() { Log.log('Module is hidden.');}, {lockString: "lockString"});
 					}
 				});
-			break;
-		}		
+				break;
+			case '/speech/nlu':
+		
+				nlu_json = (JSON.parse(payload))
+				intent_name = nlu_json["intent"]["intentName"]
+
+				self.process_voice_commands(intent_name);
+				break;
+		}
 		return;
 	},
 
@@ -232,6 +239,31 @@
 		}
 	},
 
+//----------------------------------------------------------------------//
+// PROCESS VOICE COMMANDS
+//----------------------------------------------------------------------//
+	process_voice_commands: function(intent_name){
+		var self = this;
+		if (intent_name === "remove_all"){
+			self.hide_all_modules();
+			this.sendNotification("/led/action/flash", [0.0, 0.0, 0.0, 0.0]);
+		} 
+		else if (intent_name === "reset_view"){
+			self.adjustViewLogin(self.UserLoginView);
+			this.sendNotification("/led/action/flash", [255.0, 255.0, 255.0, 0.0]);
+		} else {
+			this.sendNotification("/led/action/flash", [255.0, 200.0, 0.0, 0.0]);
+			for (const [key, value] of Object.entries(self.config.module_dict)){		
+			value.forEach(function(word) {
+				if (intent_name.includes(word)){
+					MM.getModules().withClass(key).enumerate(function(module) {
+						module.show(1000, function() {Log.log(module.name + ' is shown.');}, {lockString: "lockString"});
+					});
+				}
+			});
+			}
+		}
+	},
 //----------------------------------------------------------------------//
 // VIEW ADJUSTMENT FOR NEW USER
 //----------------------------------------------------------------------//
