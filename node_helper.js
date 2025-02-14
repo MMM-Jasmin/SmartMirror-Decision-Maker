@@ -1,7 +1,7 @@
 'use strict';
 const NodeHelper = require('node_helper');
 var mysql = require('mysql');
-
+const exec = require('child_process').exec;
 
 
 module.exports = NodeHelper.create({
@@ -65,6 +65,26 @@ module.exports = NodeHelper.create({
 				//console.log("Greet with: " + greeting);
 				self.sendSocketNotification('GREET_USER_RESULT',[payload[0],greeting]);
 
+			});
+		// } else if (notification === 'MENU_SELECTED' && payload === 'bivital') {
+		// 	const shell_command = 'echo "hello command"';
+		// 	console.log('execute shell command:', shell_command);
+		// 	// exec(shell_command);
+		// 	console.log(exec(shell_command));
+		} else if (notification === 'EXECUTE_COMMAND') {
+			// self.sendSocketNotification("SHOW_ALERT", {type: "notification", message: "Starting BIVital game HELPER"});
+			var shell_command = payload;
+			// console.info("execute shell command: " + shell_command);
+			// console.info("execute shell command: " + payload);
+			// console.log('execute shell command:', shell_command);
+			// exec(shell_command);
+			// console.log(exec(shell_command));
+			console.log('######################################');
+			exec("bash echo HELLO", (error, stdout, stderr) => {
+				if (error) {
+					console.error(`exec error: ${error}`)
+					return;
+				}
 			});
 		}
   	}

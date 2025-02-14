@@ -106,54 +106,89 @@
 		switch (notification) {
 			case 'CENTER_DISPLAY_FPS':
 				self.Debug_infos['center display [FPS]'] = parseFloat(payload).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/camera_left/fps':
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['camera [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/background/fps':
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['remove bg [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/websocket/fps':
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['websocket [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/face_det/fps':
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['face recognition [FPS]'] = parseFloat(json_obj["FPS"]).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/object_det/fps':
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['object recognition [FPS]'] = parseFloat(json_obj["OBJECT_DET_FPS"]).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/gesture_det/fps':
 				var json_obj = JSON.parse(payload);
 				self.Debug_infos['gesture recognition [FPS]'] = parseFloat(json_obj["GESTURE_DET_FPS"]).toFixed(2).toString();
+				self.updateDom();
 				break;
 			case '/object_det/hailo8/avg_power':
 					self.Debug_infos['hailo8 power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
-					if (typeof self.Debug_infos['veral power consumption [Watt]'] !== 'undefined') {
-						self.Debug_infos['veral power consumption [Watt]'] = 0.0;
+					if (typeof self.Debug_infos['Versal power consumption [Watt]'] !== 'undefined') {
+						self.Debug_infos['Versal power consumption [Watt]'] = 0.0;
 					}
+					total_power = 0.0;
+				if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['hailo8 power consumption [Watt]']);
+				}
+				if (typeof self.Debug_infos['Versal power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['Versal power consumption [Watt]']);
+				}
+				if (typeof self.Debug_infos["Jetson power consumption [Watt]"] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos["Jetson power consumption [Watt]"]);
+				}
+				//if (typeof self.Debug_infos["other power consumption [Watt]"] !== 'undefined') {
+				//	total_power += parseFloat(self.Debug_infos["other power consumption [Watt]"]);
+				//}
+				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2).toString();
+					self.updateDom();
 					break;
 			case '/object_det/versal/avg_power':
-					self.Debug_infos['veral power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
+					self.Debug_infos['Versal power consumption [Watt]'] = parseFloat(payload).toFixed(2).toString();
 					if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
 						self.Debug_infos['hailo8 power consumption [Watt]'] = 0.0;
 					}
+					total_power = 0.0;
+				if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['hailo8 power consumption [Watt]']);
+				}
+				if (typeof self.Debug_infos['Versal power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['Versal power consumption [Watt]']);
+				}
+				if (typeof self.Debug_infos["Jetson power consumption [Watt]"] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos["Jetson power consumption [Watt]"]);
+				}
+				//if (typeof self.Debug_infos["other power consumption [Watt]"] !== 'undefined') {
+				//	total_power += parseFloat(self.Debug_infos["other power consumption [Watt]"]);
+				//}
+				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2).toString();
+					self.updateDom();
 					break;
 			case 'TEGRASTATS' :
 				self.Debug_infos["Jetson power consumption [Watt]"] = parseFloat(payload["WATT"]).toFixed(2).toString() ;
 				//self.Debug_infos["other power consumption [Watt]"] = this.getRandomFloat(9.5,10.5,2).toFixed(2).toString();
-				break;
-			default:
 				total_power = 0.0;
 				if (typeof self.Debug_infos['hailo8 power consumption [Watt]'] !== 'undefined') {
 					total_power += parseFloat(self.Debug_infos['hailo8 power consumption [Watt]']);
 				}
-				if (typeof self.Debug_infos['veral power consumption [Watt]'] !== 'undefined') {
-					total_power += parseFloat(self.Debug_infos['veral power consumption [Watt]']);
+				if (typeof self.Debug_infos['Versal power consumption [Watt]'] !== 'undefined') {
+					total_power += parseFloat(self.Debug_infos['Versal power consumption [Watt]']);
 				}
 				if (typeof self.Debug_infos["Jetson power consumption [Watt]"] !== 'undefined') {
 					total_power += parseFloat(self.Debug_infos["Jetson power consumption [Watt]"]);
@@ -163,6 +198,10 @@
 				//}
 				self.Debug_infos["total power consumption [Watt]"] = total_power.toFixed(2).toString();
 				self.updateDom();
+				break;
+			default:
+				
+				//self.updateDom();
 		}
 
 		//no control if a selfie is made!
@@ -387,6 +426,11 @@
 					
 			self.sendSocketNotification('save_user_view', tmp);
 
+		} else if (selection == "bivital") {
+			// self.sendNotification("SHOW_ALERT", {type: "notification", message: "Starting BIVital game"});
+			console.info("[" + self.name + "] " + "Starting BIVital game");
+			// console.info(exec('xeyes'));
+			self.sendSocketNotification('EXECUTE_COMMAND', {type: "noticifation", message: "HELLO"});
 		} else {
 			for (const [key, value] of Object.entries(self.config.module_dict)){		
 				value.forEach(function(word) {
